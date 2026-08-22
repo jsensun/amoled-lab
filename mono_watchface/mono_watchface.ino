@@ -1,8 +1,9 @@
-﻿/*
+/*
  * ============================================================
  *  MONO · EDITORIAL 表盘 —— amoled-lab 阶段 1 · rev4
  *  硬件: 微雪 ESP32-S3-Touch-AMOLED-1.8 V2 (CO5300 + CST820)
  *
+ *  v1.1 变更: 自动息屏(15s变暗/30s熄屏) + 触摸/BOOT唤醒; IMU唤醒暂缓(轮询陷阱, 见DESIGN.md)
  *  rev4 变更:
  *   - 小字 UI 全部提升到 20px (面板可读性临界点以上, 根治"斜体"观感)
  *   - 电量计组左移适配加宽后的文字
@@ -16,6 +17,8 @@
 #include <ArduinoJson.h>
 #include <lvgl.h>
 #include "Arduino_GFX_Library.h"
+#include "Arduino_DriveBus_Library.h"
+#include <SensorQMI8658.hpp>
 #include <Adafruit_XCA9554.h>
 #include "XPowersLib.h"
 #include "HWCDC.h"
@@ -55,6 +58,59 @@ Arduino_CO5300 *gfx = new Arduino_CO5300(
     bus, GFX_NOT_DEFINED, 0, LCD_WIDTH, LCD_HEIGHT, 16, 0, 0, 0);
 Adafruit_XCA9554 expander;
 
+/* ---------------- 触摸 + IMU (息屏唤醒用) ---------------- */
+std::shared_ptr<Arduino_IIC_DriveBus> IIC_Bus =
+  std::make_shared<Arduino_HWIIC>(IIC_SDA, IIC_SCL, &Wire);
+void Arduino_IIC_Touch_Interrupt(void);
+std::unique_ptr<Arduino_IIC> CST816(new Arduino_CST816x(
+    IIC_Bus, CST816T_DEVICE_ADDRESS, DRIVEBUS_DEFAULT_VALUE, TP_INT, Arduino_IIC_Touch_Interrupt));
+SensorQMI8658 qmi;
+IMUdata acc;
+static volatile bool touchIRQ = false;
+static bool qmi_ok = false;
+void Arduino_IIC_Touch_Interrupt(void) { /* INT脉冲噪声, 弃用中断法, 改用电平检测 */ }
+
+/* ---------------- 电源状态机 ---------------- */
+enum PwrState { PWR_ACTIVE, PWR_DIM, PWR_OFF };
+static PwrState pwr = PWR_ACTIVE;
+static uint32_t lastActivity = 0;
+#define DIM_AFTER_MS  15000UL   /* 无操作 15s -> 降亮度 */
+#define OFF_AFTER_MS  30000UL   /* 无操作 30s -> 熄屏    */
+#define BRIGHT_ON     220
+#define BRIGHT_DIM    60
+
+static void updateDateTime(bool force);
+static void wakeUp();
+static void poke() {
+  lastActivity = millis();
+  if (pwr != PWR_ACTIVE) wakeUp();
+}
+static void dimNow() {
+  pwr = PWR_DIM;
+  gfx->setBrightness(BRIGHT_DIM);
+  USBSerial.println("[pwr] dim");
+}
+static void sleepNow() {
+  pwr = PWR_OFF;
+  gfx->setBrightness(0);
+  setCpuFrequencyMhz(80);
+  lv_timer_enable(false);
+  USBSerial.println("[pwr] screen off (touch / shake / BOOT to wake)");
+}
+static void wakeUp() {
+  if (pwr == PWR_OFF) {
+    setCpuFrequencyMhz(240);
+    lv_timer_enable(true);
+    lv_obj_invalidate(lv_scr_act());
+    updateDateTime(true);
+  }
+  pwr = PWR_ACTIVE;
+  lastActivity = millis();
+  gfx->setBrightness(BRIGHT_ON);
+  CST816->IIC_Interrupt_Flag = false;
+  USBSerial.println("[pwr] wake");
+}
+
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[LCD_WIDTH * LCD_HEIGHT / 10];
 
@@ -67,8 +123,6 @@ static lv_obj_t *lbl_kicker, *lbl_batt, *batt_fill;
 static lv_obj_t *lbl_hh, *lbl_mm, *lbl_temp, *lbl_cond;
 static lv_obj_t *lbl_meta, *lbl_quote;
 static lv_obj_t *lbl_rail_year, *lbl_rail_date;
-
-static bool diag_builtin = false;
 
 /* ---------------- 天气 ---------------- */
 struct Weather { bool valid; float temp; int code; };
@@ -88,6 +142,22 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area, lv_color_t *color
 
 void example_increase_lvgl_tick(void *arg) {
   lv_tick_inc(2);
+}
+
+/* ================= 触摸输入 (LVGL轮询读取, 同时清除INT) ================= */
+void my_touchpad_read(lv_indev_drv_t *indev_driver, lv_indev_data_t *data) {
+  int32_t touchX = CST816->IIC_Read_Device_Value(CST816->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_X);
+  int32_t touchY = CST816->IIC_Read_Device_Value(CST816->Arduino_IIC_Touch::Value_Information::TOUCH_COORDINATE_Y);
+
+  if (CST816->IIC_Interrupt_Flag == true) {
+    CST816->IIC_Interrupt_Flag = false;
+    data->state = LV_INDEV_STATE_PR;
+    data->point.x = touchX;
+    data->point.y = touchY;
+    poke();   /* 触摸即活动 */
+  } else {
+    data->state = LV_INDEV_STATE_REL;
+  }
 }
 
 /* ================= 文本工具 ================= */
@@ -286,6 +356,9 @@ static void timer_1s(lv_timer_t *) {
 }
 
 static void timer_wx(lv_timer_t *) {
+  static int cnt = 0;
+  if (wx.valid && ++cnt < 30) return;   /* 有效时每30分钟刷新; 失效时每60秒重试 */
+  cnt = 0;
   fetchWeather();
   applyWeather();
 }
@@ -366,33 +439,14 @@ static void build_ui() {
   lv_obj_set_style_text_align(lbl_rail_date, LV_TEXT_ALIGN_CENTER, 0);
 }
 
-/* ================= 诊断: 字体 A/B 对比 ================= */
-static void applyDiag() {
-  const lv_font_t* f_big = diag_builtin ? &lv_font_montserrat_48 : &font_time_118;
-  const lv_font_t* f_mid = diag_builtin ? &lv_font_montserrat_20 : &font_temp_46;
-  const lv_font_t* f_sml = diag_builtin ? &lv_font_montserrat_20 : &font_ui_20;
-  const lv_font_t* f_cjk = diag_builtin ? &lv_font_montserrat_20 : &font_cjk_20;
-  lv_obj_set_style_text_font(lbl_hh,    f_big, 0);
-  lv_obj_set_style_text_font(lbl_mm,    f_big, 0);
-  lv_obj_set_style_text_font(lbl_temp,  f_mid, 0);
-  lv_obj_set_style_text_font(lbl_kicker, f_sml, 0);
-  lv_obj_set_style_text_font(lbl_batt,  f_sml, 0);
-  lv_obj_set_style_text_font(lbl_meta,  f_sml, 0);
-  lv_obj_set_style_text_font(lbl_cond,  f_cjk, 0);
-  lv_obj_set_style_text_font(lbl_quote, f_cjk, 0);
-  lv_obj_set_style_text_font(lbl_rail_year, f_cjk, 0);
-  lv_obj_set_style_text_font(lbl_rail_date, f_cjk, 0);
-  USBSerial.printf("[diag] fonts switched to %s\n",
-                   diag_builtin ? "BUILTIN montserrat" : "CUSTOM generated");
-}
-
 /* ================= 初始化 ================= */
 void setup() {
   USBSerial.begin(115200);
   USBSerial.setTxTimeoutMs(0);
-  USBSerial.println("\nMONO watchface boot (rev4)");
+  USBSerial.println("\nMONO watchface boot (v1.1: auto-dim/auto-off final)");
 
-  pinMode(0, INPUT_PULLUP);   /* BOOT 键 = 字体诊断开关 */
+  pinMode(0, INPUT_PULLUP);
+  pinMode(TP_INT, INPUT_PULLUP);   /* 触摸INT 稳定电平, 保证下降沿可测 */   /* BOOT 键 = 字体诊断开关 */
 
   Wire.begin(IIC_SDA, IIC_SCL);
   if (!expander.begin(0x20)) {
@@ -411,6 +465,40 @@ void setup() {
     expander.digitalWrite(1, HIGH);
     expander.digitalWrite(2, HIGH);
     expander.digitalWrite(6, HIGH);
+    delay(100);                    /* 复位时序对齐小智官方: 高100ms */
+    expander.digitalWrite(0, LOW);
+    expander.digitalWrite(1, LOW);
+    expander.digitalWrite(2, LOW);
+    delay(300);                    /* 拉低300ms 让屏/触摸彻底复位 */
+    expander.digitalWrite(0, HIGH);
+    expander.digitalWrite(1, HIGH);
+    expander.digitalWrite(2, HIGH);
+    expander.digitalWrite(6, HIGH);
+    delay(200);                    /* 释放后等待芯片就绪 */
+  }
+
+  /* 触摸 (唤醒源1) + IMU (唤醒源2), 失败不阻塞 */
+  bool touch_ok = false;
+  for (int i = 0; i < 3 && !touch_ok; i++) {
+    touch_ok = CST816->begin();
+    if (!touch_ok) { USBSerial.printf("CST816 retry %d...\n", i + 1); delay(200); }
+  }
+  if (!touch_ok) {
+    USBSerial.println("CST816 init fail (touch-wake disabled)");
+  } else {
+    CST816->IIC_Write_Device_State(
+      CST816->Arduino_IIC_Touch::Device::TOUCH_DEVICE_INTERRUPT_MODE,
+      CST816->Arduino_IIC_Touch::Device_Mode::TOUCH_DEVICE_INTERRUPT_PERIODIC);
+    USBSerial.println("CST816 ok");
+  }
+  if (!qmi.begin(Wire, QMI8658_L_SLAVE_ADDRESS, IIC_SDA, IIC_SCL)) {
+    USBSerial.println("QMI8658 not found (shake-wake disabled)");
+  } else {
+    qmi.configAccelerometer(SensorQMI8658::ACC_RANGE_4G,
+                            SensorQMI8658::ACC_ODR_500Hz, SensorQMI8658::LPF_MODE_0);
+    qmi.enableAccelerometer();
+    qmi_ok = true;
+    USBSerial.println("QMI8658 ok");
   }
 
   pmu_ok = pmu.begin(Wire, 0x34, IIC_SDA, IIC_SCL);
@@ -428,6 +516,13 @@ void setup() {
   disp_drv.flush_cb = my_disp_flush;
   disp_drv.draw_buf = &draw_buf;
   lv_disp_drv_register(&disp_drv);
+
+  /* 触摸输入设备 (持续读取会自动清除触摸芯片INT) */
+  static lv_indev_drv_t indev_drv;
+  lv_indev_drv_init(&indev_drv);
+  indev_drv.type = LV_INDEV_TYPE_POINTER;
+  indev_drv.read_cb = my_touchpad_read;
+  lv_indev_drv_register(&indev_drv);
 
   build_ui();
 
@@ -468,16 +563,39 @@ void setup() {
 }
 
 void loop() {
+  /* ---- BOOT 键: 亮屏时按下=立即息屏, 熄屏时按下=唤醒 ---- */
   static int lastBoot = HIGH;
   int b = digitalRead(0);
   if (b == LOW && lastBoot == HIGH) {
     delay(30);
     if (digitalRead(0) == LOW) {
-      diag_builtin = !diag_builtin;
-      applyDiag();
+      if (pwr == PWR_OFF) poke();
+      else sleepNow();
     }
   }
   lastBoot = b;
+
+  /* ---- 活动检测: 触摸由 LVGL 轮询回调上报; IMU唤醒暂缓(驱动轮询异常, 阶段2改硬件中断实现) ---- */
+  bool activity = false;
+  if (activity) poke();
+
+  /* ---- 状态迁移 ---- */
+  uint32_t idle = millis() - lastActivity;
+  if (pwr == PWR_ACTIVE && idle > DIM_AFTER_MS) dimNow();
+  else if (pwr == PWR_DIM && idle > OFF_AFTER_MS) sleepNow();
+
+  /* ---- 熄屏态: 低占空值守候, 轻量轮询触摸寄存器(读数据同时清INT) ---- */
+  if (pwr == PWR_OFF) {
+    static uint32_t lastTp = 0;
+    if (millis() - lastTp >= 120) {
+      lastTp = millis();
+      int32_t fingers = CST816->IIC_Read_Device_Value(
+        CST816->Arduino_IIC_Touch::Value_Information::TOUCH_FINGER_NUMBER);
+      if (fingers > 0) poke();
+    }
+    delay(30);
+    return;
+  }
 
   lv_timer_handler();
   delay(5);

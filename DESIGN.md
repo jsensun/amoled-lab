@@ -93,3 +93,29 @@
 5. **诊断方法论**：BOOT 键切换 自定义字体↔系统字体 的 A/B 对比模式是定位渲染问题的利器，
    保留在固件中。
 
+## 六、阶段 1.5 交付记录（电源管理 · v1.1 已验收 ✅）
+
+**功能**：无操作 15s 变暗 → 30s 熄屏（CPU 240→80MHz，UI 冻结）；唤醒 = 触摸 / BOOT 键。
+**发布**：GitHub [v1.1.0](https://github.com/jsensun/amoled-lab/releases/tag/v1.1.0)（bin+zip 双格式固件）。
+**开源仓库**：https://github.com/jsensun/amoled-lab
+
+**新增踩坑经验（6-9 号）**
+
+6. **IMU 轮询陷阱**：以 100ms 周期轮询 QMI8658 做"拿起唤醒"会引发每秒数千次虚假活动
+   （驱动层副作用）。**教训：体感唤醒必须用 IMU 硬件中断引脚，不要软件轮询。** 阶段 2 重做。
+7. **CST820 触摸 INT 行为**：INT 每个扫描帧后拉低直到主机读数据清除。正确用法 =
+   LVGL indev 持续轮询读取（顺带清 INT）；熄屏态轻量轮询 FINGER_NUMBER 寄存器实现触摸唤醒。
+   用 INT 电平/边沿判定"活动"会被扫描帧噪声淹没（本次息屏失灵的真正元凶）。
+8. **触摸芯片复位时序**：IO 扩展器复位脉冲需 高100ms→低300ms→高（对齐小智官方），
+   20ms 快脉冲导致 CST820 init 失败；加 3 次重试后成功率 100%。
+9. **PowerShell 编码陷阱实证**：`Get-Content`/`Set-Content` 默认 ANSI 会毁掉 UTF-8 中文源码
+   （已实际发生一次，全文件重写恢复）。含中文文件一律 write 工具或 .NET UTF8 读写。
+
+**知识库补充**
+
+- **开源仓库**：https://github.com/jsensun/amoled-lab （README 含完整刷机指南与踩坑清单）
+- 固件存档：`releases\mono_watchface_v1.1_20260822\`；历史 rev4 存档于
+  `releases\mono_watchface_rev4_20260822\`
+- ⚠️ `mono_watchface\secrets.h` 含真实 WiFi 密码：本地保留供编译，已被 .gitignore 排除；
+  改 WiFi 时同步更新该文件
+

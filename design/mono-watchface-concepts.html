@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>MONO 表盘视觉稿 · 368×448</title>
+<style>
+  :root {
+    --amber: #FFB000;
+    --vermilion: #E8503A;
+    --ink-hi: #F5F5F0;
+    --ink-mid: #9A9A94;
+    --ink-low: #3A3A38;
+    --true-black: #000000;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #17171a;
+    color: var(--ink-mid);
+    font-family: "Segoe UI Variable Display", "Segoe UI", "Inter", sans-serif;
+    padding: 48px 24px 80px;
+  }
+  h1 { color: var(--ink-hi); font-weight: 300; font-size: 28px; letter-spacing: .04em; text-align: center; }
+  .sub { text-align: center; margin-top: 10px; font-size: 13px; letter-spacing: .12em; }
+  .gallery {
+    display: flex; gap: 56px; justify-content: center; flex-wrap: wrap; margin-top: 56px;
+  }
+  .card { display: flex; flex-direction: column; align-items: center; }
+  /* 板子屏幕：368×448，AMOLED 纯黑 */
+  .screen {
+    width: 368px; height: 448px;
+    background: var(--true-black);
+    border-radius: 14px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 0 0 1px #2a2a2e, 0 24px 60px rgba(0,0,0,.55);
+    color: var(--ink-hi);
+    font-variant-numeric: tabular-nums;
+  }
+  .label { margin-top: 22px; text-align: center; max-width: 368px; }
+  .label b { color: var(--ink-hi); font-weight: 600; font-size: 15px; letter-spacing: .06em; }
+  .label p { font-size: 12.5px; line-height: 1.7; margin-top: 6px; color: #77777f; }
+
+  /* ============ 方案 A · GRID 瑞士网格 ============ */
+  .a { padding: 26px 30px; display: flex; flex-direction: column; }
+  .a .status { display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 13px; letter-spacing: .18em; color: var(--ink-mid); }
+  .a .status .dot { display:inline-block; width:7px; height:7px; border-radius:50%;
+    background: var(--amber); margin-right: 8px; vertical-align: 1px; }
+  .a .date { margin-top: auto; font-size: 15px; letter-spacing: .3em; color: var(--ink-mid); }
+  .a .time { font-size: 104px; font-weight: 200; line-height: .96; letter-spacing: -0.02em;
+    color: var(--ink-hi); margin-top: 6px; }
+  .a .time .sec { font-size: 26px; font-weight: 300; color: var(--ink-low);
+    vertical-align: 34px; margin-left: 6px; letter-spacing: 0; }
+  .a .bars { margin-top: 26px; display: flex; flex-direction: column; gap: 12px; }
+  .a .bar-row { display:flex; align-items:center; gap:12px; font-size:11px;
+    letter-spacing:.22em; color:var(--ink-low); }
+  .a .bar { flex:1; height:2px; background:#1c1c1e; position:relative; }
+  .a .bar i { position:absolute; left:0; top:0; bottom:0; background:var(--ink-mid); }
+  .a .bar.acc i { background: var(--amber); }
+
+  /* ============ 方案 B · ARC 圆弧仪表 ============ */
+  .b { display:flex; align-items:center; justify-content:center; }
+  .b svg { position:absolute; inset:0; width:100%; height:100%; }
+  .b .center { text-align:center; z-index:2; transform: translateY(-8px); }
+  .b .time { font-size: 72px; font-weight: 250; letter-spacing: -0.01em; line-height:1; }
+  .b .below { margin-top: 12px; font-size: 13px; letter-spacing: .42em; color: var(--ink-mid); }
+  .b .corner { position:absolute; font-size: 12px; letter-spacing: .16em; color: var(--ink-mid); }
+  .b .tl { top:24px; left:26px; } .b .tr { top:24px; right:26px; text-align:right; }
+  .b .bl { bottom:24px; left:26px; } .b .br { bottom:24px; right:26px; text-align:right; }
+  .b .corner small { display:block; font-size:10px; color:var(--ink-low); letter-spacing:.24em; margin-bottom:3px; }
+
+  /* ============ 方案 C · EDITORIAL 编辑排版 ============ */
+  .c { display:flex; }
+  .c .left { flex:1; padding: 30px 0 30px 32px; display:flex; flex-direction:column; }
+  .c .kicker-row { display:flex; justify-content:space-between; align-items:center; }
+  .c .kicker { font-size: 11px; letter-spacing: .5em; color: var(--ink-mid); }
+  .c .batt { display:flex; align-items:center; gap:7px; font-size:11px;
+    letter-spacing:.2em; color:var(--ink-mid); }
+  .c .shell { position:relative; display:inline-block; width:20px; height:10px;
+    border:1px solid var(--ink-low); border-radius:2px; padding:1.5px; }
+  .c .shell::after { content:''; position:absolute; right:-4px; top:2px; width:2.5px; height:4px;
+    background:var(--ink-low); border-radius:0 1px 1px 0; }
+  .c .fill { display:block; height:100%; width:87%; background:var(--ink-mid); border-radius:1px; }
+  .c .stack { margin-top:auto; margin-bottom:auto; }
+  .c .time-row { display:flex; justify-content:space-between; align-items:flex-end; }
+  .c .hh, .c .mm { font-size: 118px; font-weight: 500; line-height: .88; letter-spacing: -0.03em; }
+  .c .mm { color: #C4C4BE; }
+  .c .wx { text-align:right; padding-bottom: 10px; }
+  .c .wx-temp { font-size: 46px; font-weight: 350; letter-spacing: -0.02em; line-height:1; }
+  .c .wx-cond { margin-top: 8px; font-size: 13px; letter-spacing: .42em; color: var(--ink-mid); }
+  .c .colon-note { margin-top: 18px; font-size: 12px; color: var(--ink-mid); letter-spacing:.1em; }
+  .c .quote { font-family: "Georgia", "Songti SC", serif; font-style: italic;
+    font-size: 15px; color: var(--ink-hi); }
+  .c .quote span { color: var(--vermilion); font-style: normal; }
+  .c .right {
+    width: 64px; border-left: 1px solid #161618;
+    writing-mode: vertical-rl; display:flex; align-items:center; justify-content:center;
+    gap: 18px; padding: 28px 0; font-size: 13px; letter-spacing: .5em; color: var(--ink-mid);
+  }
+  .c .right .vdot { width:8px; height:8px; background: var(--vermilion); border-radius:50%; }
+
+  .footer { margin-top: 72px; text-align:center; font-size: 12.5px; line-height: 2; color: #5a5a62; }
+  .footer b { color: var(--ink-hi); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>MONO · Watch Face Concepts</h1>
+<div class="sub">三版视觉稿 · 均为 368×448 原始比例 · AMOLED 真黑底渲染</div>
+
+<div class="gallery">
+
+  <!-- A -->
+  <div class="card">
+    <div class="screen a">
+      <div class="status">
+        <span><span class="dot"></span>31° 晴</span>
+        <span>87%</span>
+      </div>
+      <div class="date">08月21日 星期五</div>
+      <div class="time">21:47<span class="sec">08</span></div>
+      <div class="bars">
+        <div class="bar-row"><span>DAY</span><div class="bar acc"><i style="width:91%"></i></div><span>91%</span></div>
+        <div class="bar-row"><span>WEEK</span><div class="bar"><i style="width:71%"></i></div><span>71%</span></div>
+      </div>
+    </div>
+    <div class="label">
+      <b>A · GRID —— 瑞士网格</b>
+      <p>信息层级最清晰：状态行 → 日期 → 超大时间 → 进度条。<br>琥珀橙只出现在一处，视线自然聚焦。最耐看、最"产品感"。</p>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="card">
+    <div class="screen b">
+      <svg viewBox="0 0 368 448">
+        <circle cx="184" cy="224" r="150" fill="none" stroke="#1c1c1e" stroke-width="2"/>
+        <circle cx="184" cy="224" r="150" fill="none" stroke="#FFB000" stroke-width="2"
+          stroke-linecap="round" stroke-dasharray="857.7 942.5"
+          transform="rotate(-90 184 224)"/>
+        <circle cx="184" cy="74" r="3.5" fill="#FFB000"/>
+      </svg>
+      <div class="center">
+        <div class="time">21:47</div>
+        <div class="below">星期五</div>
+      </div>
+      <div class="corner tl"><small>DATE</small>08/21</div>
+      <div class="corner tr"><small>WX</small>晴 31°</div>
+      <div class="corner bl"><small>BAT</small>87%</div>
+      <div class="corner br"><small>STEP</small>6,432</div>
+    </div>
+    <div class="label">
+      <b>B · ARC —— 圆弧仪表</b>
+      <p>环形弧线显示当天进度，四角对称布置信息点。<br>最有"精密仪器"气质，与后续 DOT 点阵人格血缘最近。</p>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="card">
+    <div class="screen c">
+      <div class="left">
+        <div class="kicker-row">
+          <span class="kicker">FRIDAY</span>
+          <span class="batt"><i class="shell"><i class="fill"></i></i>87%</span>
+        </div>
+        <div class="stack">
+          <div class="time-row">
+            <div>
+              <div class="hh">21</div>
+              <div class="mm">47</div>
+            </div>
+            <div class="wx">
+              <div class="wx-temp">31°</div>
+              <div class="wx-cond">晴</div>
+            </div>
+          </div>
+          <div class="colon-note">AUG · 21ST · DAY 233/365</div>
+        </div>
+        <div class="quote">「凡心所向，素履以往<span>。</span>」</div>
+      </div>
+      <div class="right">
+        <span>二〇二六年</span><span class="vdot"></span><span>八月廿一日</span>
+      </div>
+    </div>
+    <div class="label">
+      <b>C · EDITORIAL —— 编辑排版（修订版）</b>
+      <p>杂志封面式构图：数字加粗至 Light 字重，右上角电量仪表。<br>文化气息最强，是 LIT 人格的预告片。每日金句可联网更新。</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  三稿共用同一套底层设计令牌：真黑底 #000000 · 三级灰阶 · 等宽数字 · 单一强调色<br>
+  <b>选定一版后</b>，我将把它固化为设计系统（色板 / 字号阶梯 / 间距网格 / 动效曲线），后续所有界面由此生长
+</div>
+
+</body>
+</html>

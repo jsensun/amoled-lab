@@ -1,0 +1,5 @@
+mono_watchface/build/
+mono_watchface/fonts/src/
+mono_watchface/secrets.h
+releases/
+*.log

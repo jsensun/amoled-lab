@@ -1,19 +1,35 @@
 # MONO · EDITORIAL 表盘
 
 > 为 **微雪 Waveshare ESP32-S3-Touch-AMOLED-1.8（V2）** 打造的一块极简编辑排版风格智能表盘。
-> 纯黑 AMOLED · 118px 大字时间 · 实时天气 · 电量仪表 · 每日金句 · 汉字竖排日期栏。
+> **三页卡片**：主页 MONO（时钟）· 天气 DOT（仪表盘）· 日历 LIT（书籍摘抄）。
+> 左右滑动切换 · 纯黑 AMOLED · 118px 大字时间 · 实时天气 · 电量仪表 · 每日摘抄。
 
 ---
 
 ## ✨ 特性
 
+### 主页 MONO（时钟）
 - **NTP 自动对时** —— 联网后时间永远准确，断电不断时（RTC 后备）
-- **实时天气** —— Open-Meteo 免费 API（无需注册密钥），每 30 分钟自动刷新，支持晴/雨/雪等十余种天况显示
+- **118px 大字时间** + 实时天气（温度 + 天况）
 - **电量仪表** —— 直读 AXP2101 电源芯片，充电时显示 `xx%+`
-- **每日金句** —— 内置 10 句经典语录按日轮换（升级计划：联网拉取）
-- **汉字竖排日期栏** —— 「二〇二六年・八月廿一日」杂志版权页式排版
-- **一年进度彩蛋** —— `DAY 234/365`，每天跳一格
-- **字体诊断模式** —— 按 BOOT 键可在自定义字体与系统字体间切换（排障利器）
+- **每日金句** —— 内置 10 句经典语录按日轮换
+- **汉字竖排日期栏** —— 「二〇二六年・八月廿一日」杂志版权页式排版 + 一年进度彩蛋
+
+### 天气 DOT（仪表盘）
+- **大温度** 118px + 湿度/风速/气压三列指标
+- **24h 温度趋势** —— 圆角渐变柱 / 平滑曲线 两种模式（轻点趋势区切换）
+- 电光青强调色，点阵科技风
+
+### 日历 LIT（书籍摘抄）
+- **每日书籍摘抄** —— 12 部经典（《论语》《道德经》《庄子》《小窗幽记》《大学》《中庸》《孟子》《周易》《诗经》《楚辞》《世说新语》《浮生六记》）按日轮换
+- **农历 + 节气** —— 1900-2100 农历转换表 + 24 节气近似计算
+- **宜 / 忌** —— 每日随机建议
+- 宋体衬线排版 + 朱砂印章，黑底编辑风（与主页/天气页统一）
+
+### 通用
+- **左右滑动切页** + 底部三点指示器
+- **自动回主页** —— 子页 60s 无操作自动滑回
+- **电源管理** —— 15s 变暗 → 30s 熄屏，触摸/BOOT 唤醒
 
 ## 🔧 硬件要求
 
@@ -87,13 +103,18 @@ arduino-cli upload  -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,
 |---|---|---|
 | 时间 | Montserrat Medium | 118px |
 | 温度 | Montserrat Medium | 46px |
+| 指标数值 | Montserrat Medium | 30px |
 | 星期/电量/日期行 | Montserrat Medium | 20px |
-| 中文（金句/竖排日期/天况） | 思源黑体 Noto Sans SC Medium | 20px |
+| 中文（金句/天况/农历） | 思源黑体 Noto Sans SC Medium | 20px |
+| 摘抄正文（LIT 页） | 思源宋体 Noto Serif SC Medium | 28px |
+| 摘抄出处/印章（LIT 页） | 思源宋体 Noto Serif SC Medium | 20px |
 
-设计令牌与视觉稿方法详见 [DESIGN.md](DESIGN.md)，三套备选风格稿在 `design/` 目录。
+三页统一**黑底编辑风**（AMOLED 真黑 + 暖白文字 + 朱砂/电光青点缀），
+LIT 页保留宋体衬线以承载文化韵味。设计令牌与视觉稿方法详见 [DESIGN.md](DESIGN.md)，
+三页视觉稿在 `design/stage2-cards-concepts.html`。
 
 字库由 `tools/gen-fonts.js` 一键生成（基于 lv_font_conv），中文子集只含
-113 个实际用到的汉字，全部字库仅约 350KB。
+实际用到的汉字（当前 449 个字形），全部字库仅约 1.5MB。
 
 ## 📖 开发历程
 
@@ -138,13 +159,19 @@ arduino-cli upload  -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,
 amoled-lab/
 ├── DESIGN.md                    # 设计系统文档 + 全部经验记录
 ├── design/                      # HTML 视觉稿(368×448 真实比例)
+│   ├── stage2-cards-concepts.html   # 阶段2 三页设计稿(用户确认稿)
+│   ├── mono-watchface-concepts.html # 阶段1 三方案备选稿(A/B/C)
+│   └── preview/                     # 1:1 预览器(溢出/重叠/缺字检测)
 ├── mono_watchface/              # ★ 表盘固件工程
-│   ├── mono_watchface.ino       # 主程序
+│   ├── mono_watchface.ino       # 主程序(三页架构 + 滑动导航 + 天气 + 农历)
 │   ├── pin_config.h             # V2 引脚定义(实测验证)
 │   ├── secrets.h.example        # WiFi 配置模板(复制为 secrets.h)
 │   ├── partitions.csv           # 16MB 自定义分区
-│   ├── font_*.c                 # 预生成的 LVGL 字库
-│   └── tools/gen-fonts.js       # 字库生成管线(node gen-fonts.js)
+│   ├── font_*.c                 # 7 个预生成的 LVGL 字库
+│   └── tools/                   # 字库生成与校验工具
+│       ├── gen-fonts.js         # 字库生成管线(node gen-fonts.js)
+│       ├── sync-symbols.py      # 从 .ino 自动提取字符集
+│       └── check-font.py        # 校验字库覆盖(退出码0才准烧录)
 └── releases/                    # 本地固件存档(不入库)
 ```
 

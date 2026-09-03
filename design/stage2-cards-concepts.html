@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>阶段2 · 三页视觉稿</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--mono-bg:#000;--mono-hi:#F5F5F0;--mono-mm:#C4C4BE;--mono-mid:#9A9A94;--mono-low:#3A3A38;--mono-acc:#E8503A;
+--dot-cyan:#00E5C8;--dot-dim:#0D3D38;--dot-mid:#2A8F84;
+--lit-paper:#F6F1E6;--lit-ink:#201D18;--lit-ink2:#6B6560;--lit-red:#B03A2E;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a1e;color:#ccc;font-family:"Noto Sans SC","Segoe UI",sans-serif;padding:32px 16px 64px}
+h1{text-align:center;font-weight:300;font-size:22px;color:#eee;letter-spacing:.08em;margin-bottom:8px}
+.sub{text-align:center;font-size:12px;color:#666;letter-spacing:.15em;margin-bottom:40px}
+.gallery{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.screen{width:368px;height:448px;border-radius:14px;position:relative;overflow:hidden;
+box-shadow:0 0 0 1px #2a2a2e,0 16px 48px rgba(0,0,0,.6);font-variant-numeric:tabular-nums}
+.screen-label{text-align:center;margin-top:16px}
+.screen-label b{font-size:14px;color:#eee;letter-spacing:.06em}
+.screen-label p{font-size:11px;color:#666;margin-top:4px;line-height:1.6}
+
+/* NAV DOTS */
+.nav-dots{position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:10}
+.nav-dots i{width:6px;height:6px;border-radius:50%;background:#333}
+.nav-dots i.active{background:#fff;width:18px;border-radius:3px}
+
+/* ========= PAGE 1: MONO HOME (mini) ========= */
+.mono{background:var(--mono-bg);padding:26px 28px;display:flex;flex-direction:column}
+.mono .kicker-row{display:flex;justify-content:space-between;font-size:14px;color:var(--mono-mid);letter-spacing:.25em}
+.mono .kicker-row .batt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mono-mid)}
+.mono .battery-shell{display:inline-block;width:18px;height:9px;border:1px solid var(--mono-low);border-radius:2px;position:relative}
+.mono .battery-shell::after{content:'';position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--mono-low);border-radius:0 1px 1px 0}
+.mono .battery-shell i{display:block;height:100%;width:87%;background:var(--mono-mid);border-radius:1px}
+.mono .time-stack{margin-top:auto;margin-bottom:auto}
+.mono .time-row{display:flex;justify-content:space-between;align-items:flex-end}
+.mono .hh{font-size:100px;font-weight:300;line-height:.88;color:var(--mono-hi)}
+.mono .mm{font-size:100px;font-weight:300;line-height:.88;color:var(--mono-mm)}
+.mono .wx{text-align:right;padding-bottom:8px}
+.mono .wx-temp{font-size:38px;font-weight:350;color:var(--mono-hi);line-height:1}
+.mono .wx-cond{font-size:14px;color:var(--mono-mid);letter-spacing:.3em;margin-top:4px}
+.mono .meta{font-size:14px;color:var(--mono-mid);letter-spacing:.12em}
+.mono .quote{font-size:14px;color:var(--mono-hi);font-family:"Noto Serif SC",serif;margin-top:auto}
+.mono .quote span{color:var(--mono-acc)}
+.mono .rail{position:absolute;right:0;top:24px;width:64px;bottom:24px;border-left:1px solid #161618}
+.mono .rail-year,.mono .rail-date{position:absolute;left:0;width:64px;text-align:center;font-size:16px;color:var(--mono-mid);font-family:"Noto Sans SC"}
+.mono .rail-year{top:40px}
+.mono .rail-dot{position:absolute;left:30px;width:6px;height:6px;border-radius:50%;background:var(--mono-acc)}
+.mono .rail-date{top:180px}
+
+/* ========= PAGE 2: DOT WEATHER ========= */
+.dot{background:var(--mono-bg);padding:28px;color:var(--dot-cyan);font-family:"DotGothic16","Courier New",monospace}
+.dot .top-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--mono-mid);letter-spacing:.15em}
+.dot .divider{height:1px;background:#1a3a38;margin:14px 0}
+.dot .main{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+.dot .temp-big{font-size:110px;font-weight:400;line-height:.9;color:#fff;letter-spacing:-.02em}
+.dot .temp-big sup{font-size:36px;vertical-align:28px;color:var(--dot-cyan)}
+.dot .cond-block{text-align:right;padding-bottom:10px}
+.dot .cond-text{font-family:"Noto Sans SC";font-size:24px;font-weight:700;color:#fff;letter-spacing:.3em}
+.dot .cond-sub{font-size:12px;color:var(--mono-mid);letter-spacing:.2em;margin-top:4px;font-family:"Noto Sans SC"}
+.dot .metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:16px}
+.dot .metric-item{padding:10px 0;border-top:1px solid #12242a}
+.dot .metric-label{font-size:10px;color:var(--mono-low);letter-spacing:.25em}
+.dot .metric-value{font-size:20px;color:#fff;margin-top:4px}
+.dot .metric-value .unit{font-size:11px;color:var(--dot-mid)}
+.dot .trend-section{margin-top:auto}
+.dot .trend-label{font-size:10px;color:var(--mono-low);letter-spacing:.3em;margin-bottom:8px}
+.dot .trend-bars{display:flex;align-items:flex-end;gap:4px;height:64px}
+.dot .trend-bar{flex:1;border-radius:2px 2px 0 0;position:relative}
+.dot .trend-bar.now{background:var(--dot-cyan);box-shadow:0 0 8px rgba(0,229,200,.3)}
+.dot .trend-bar:not(.now){background:var(--dot-dim)}
+.dot .trend-times{display:flex;justify-content:space-between;font-size:9px;color:var(--mono-low);margin-top:6px;letter-spacing:.1em}
+
+/* ========= PAGE 3: LIT POETRY CALENDAR ========= */
+.lit{background:var(--lit-paper);color:var(--lit-ink);padding:28px 32px;display:flex;flex-direction:column}
+.lit .header{border-top:2px solid var(--lit-ink);border-bottom:1px solid var(--lit-ink);padding:10px 0;margin-bottom:24px;display:flex;justify-content:space-between;align-items:baseline}
+.lit .header .title{font-size:12px;letter-spacing:.35em;font-weight:500}
+.lit .header .solar{font-size:11px;letter-spacing:.15em;color:var(--lit-ink2)}
+.lit .poem-area{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 8px}
+.lit .poem-title{font-size:22px;font-weight:700;font-family:"Noto Serif SC",serif;margin-bottom:8px;letter-spacing:.2em}
+.lit .poem-author{font-size:13px;color:var(--lit-ink2);margin-bottom:28px;letter-spacing:.15em}
+.lit .poem-lines{text-align:center;line-height:2.4;font-size:19px;font-family:"Noto Serif SC",serif;font-weight:400}
+.lit .poem-lines p{margin:0}
+.lit .seal{display:inline-block;width:36px;height:36px;border-radius:4px;background:var(--lit-red);color:#fff;font-size:16px;font-family:"Noto Serif SC",serif;
+display:flex;align-items:center;justify-content:center;margin:20px auto 0;opacity:.85}
+.lit .lunar-row{text-align:center;font-size:12px;color:var(--lit-ink2);letter-spacing:.2em;margin-top:24px;padding-top:16px;border-top:1px solid #d8d2c6}
+.lit .yi-ji{display:flex;justify-content:center;gap:48px;margin-top:20px;padding-top:16px;border-top:1px dashed #ccc5b8}
+.lit .yi-ji-col{text-align:center}
+.lit .yi-ji-label{font-size:11px;letter-spacing:.2em;margin-bottom:6px}
+.lit .yi-ji-label.red{color:var(--lit-red)}
+.lit .yi-ji-items{font-size:13px;letter-spacing:.15em;color:var(--lit-ink2);font-family:"Noto Serif SC"}
+
+/* ANNOTATIONS */
+.annots{max-width:900px;margin:40px auto 0;padding:0 16px}
+.annots h2{font-size:16px;color:#eee;font-weight:400;margin-bottom:16px;letter-spacing:.08em}
+.annots table{width:100%;border-collapse:collapse;font-size:12px;color:#aaa}
+.annots th{text-align:left;padding:8px 12px;border-bottom:1px solid #333;color:#ccc;font-weight:500;letter-spacing:.06em}
+.annots td{padding:8px 12px;border-bottom:1px solid #222;line-height:1.6}
+.annots td b{color:#eee;font-weight:500}
+.annots .tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:.1em;margin-right:4px}
+.annots .tag-mono{background:#2a2a2e;color:#999}
+.annots .tag-dot{background:#0D3D38;color:var(--dot-cyan)}
+.annots .tag-lit{background:#d8d2c6;color:var(--lit-ink)}
+</style>
+</head>
+<body>
+
+<h1>阶段 2 · 三页设计稿</h1>
+<div class="sub">368×448 真实比例 · 三重人格并列 · 左右滑动导航</div>
+
+<div class="gallery">
+
+<!-- ===== PAGE 1: MONO HOME ===== -->
+<div class="card">
+<div class="screen mono">
+  <div class="kicker-row">
+    <span>F R I D A Y</span>
+    <span class="batt"><span class="battery-shell"><i></i></span> 87%</span>
+  </div>
+  <div class="time-stack">
+    <div class="time-row">
+      <div><div class="hh">21</div><div class="mm">47</div></div>
+      <div class="wx">
+        <div class="wx-temp">31°</div>
+        <div class="wx-cond">阴</div>
+      </div>
+    </div>
+  </div>
+  <div class="meta">AUG · 22ST · DAY 234/365</div>
+  <div class="quote">「<span>凡</span>心所向，素履以往。」</div>
+  <div class="rail">
+    <div class="rail-year">二<br>〇<br>二<br>六<br>年</div>
+    <div class="rail-dot" style="top:160px"></div>
+    <div class="rail-date">八<br>月<br>廿<br>二<br>日</div>
+  </div>
+  <div class="nav-dots"><i class="active"></i><i></i><i></i></div>
+</div>
+<div class="screen-label"><b>A · 主页 MONO</b><p>现有人格·瑞士编辑排版<br>← 左滑进入天气 → 右滑进入诗词</p></div>
+</div>
+
+<!-- ===== PAGE 2: DOT WEATHER ===== -->
+<div class="card">
+<div class="screen dot">
+  <div class="top-row"><span>WX · NINGBO</span><span>14:32 UPD</span></div>
+  <div class="divider"></div>
+  <div class="main">
+    <div class="temp-big">31<sup>°</sup></div>
+    <div class="cond-block">
+      <div class="cond-text">阴</div>
+      <div class="cond-sub">OVERCAST</div>
+    </div>
+  </div>
+  <div class="metrics">
+    <div class="metric-item"><div class="metric-label">HUMIDITY</div><div class="metric-value">62 <span class="unit">%</span></div></div>
+    <div class="metric-item"><div class="metric-label">WIND</div><div class="metric-value">3.4 <span class="unit">m/s</span></div></div>
+    <div class="metric-item"><div class="metric-label">PRESSURE</div><div class="metric-value">1008 <span class="unit">hPa</span></div></div>
+    <div class="metric-item"><div class="metric-label">FEELS</div><div class="metric-value">33 <span class="unit">°</span></div></div>
+  </div>
+  <div class="trend-section">
+    <div class="trend-label">24H TEMPERATURE</div>
+    <div class="trend-bars">
+      <div class="trend-bar" style="height:35%"></div>
+      <div class="trend-bar" style="height:28%"></div>
+      <div class="trend-bar" style="height:22%"></div>
+      <div class="trend-bar" style="height:20%"></div>
+      <div class="trend-bar" style="height:25%"></div>
+      <div class="trend-bar" style="height:38%"></div>
+      <div class="trend-bar" style="height:55%"></div>
+      <div class="trend-bar" style="height:72%"></div>
+      <div class="trend-bar" style="height:88%"></div>
+      <div class="trend-bar now" style="height:82%"></div>
+      <div class="trend-bar" style="height:70%"></div>
+      <div class="trend-bar" style="height:55%"></div>
+    </div>
+    <div class="trend-times"><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span></div>
+  </div>
+  <div class="nav-dots"><i></i><i class="active"></i><i></i></div>
+</div>
+<div class="screen-label"><b>B · 天气 DOT</b><p>点阵仪表盘风格·青色强调色<br>显示实时环境数据+温度趋势</p></div>
+</div>
+
+<!-- ===== PAGE 3: LIT POETRY ===== -->
+<div class="card">
+<div class="screen lit">
+  <div class="header">
+    <span class="title">墨 · 日历</span>
+    <span class="solar">2026年08月22日</span>
+  </div>
+  <div class="poem-area">
+    <div class="poem-title">山居秋暝</div>
+    <div class="poem-author">唐 · 王维</div>
+    <div class="poem-lines">
+      <p>空山新雨后，</p>
+      <p>天气晚来秋。</p>
+      <p>明月松间照，</p>
+      <p>清泉石上流。</p>
+    </div>
+    <div class="seal">诗</div>
+  </div>
+  <div class="lunar-row">农历七月初十 · 处暑</div>
+  <div class="yi-ji">
+    <div class="yi-ji-col">
+      <div class="yi-ji-label red">宜</div>
+      <div class="yi-ji-items">静坐 · 读书 · 散步</div>
+    </div>
+    <div class="yi-ji-col">
+      <div class="yi-ji-label">忌</div>
+      <div class="yi-ji-items">熬夜 · 内耗 · 甜食</div>
+    </div>
+  </div>
+  <div class="nav-dots"><i></i><i></i><i class="active" style="background:var(--lit-ink)"></i></div>
+</div>
+<div class="screen-label"><b>C · 日历 LIT</b><p>纸面杂志风·衬线排版·朱砂印章<br>展示农历节气与每日一诗</p></div>
+</div>
+
+</div>
+
+<!-- ===== SPEC TABLE ===== -->
+<div class="annots">
+<h2>设计规范</h2>
+<table>
+<tr><th>项</th><th>主页 MONO</th><th>天气 DOT</th><th>日历 LIT</th></tr>
+<tr>
+  <td>背景</td>
+  <td><span class="tag tag-mono">AMOLED #000</span> 纯黑</td>
+  <td><span class="tag tag-dot">AMOLED #000</span> 纯黑</td>
+  <td><span class="tag tag-lit">纸面 #F6F1E6</span> 米白</td>
+</tr>
+<tr>
+  <td>强调色</td>
+  <td>朱砂 #E8503A</td>
+  <td>电光青 #00E5C8</td>
+  <td>朱砂 #B03A2E</td>
+</tr>
+<tr>
+  <td>数字字体</td>
+  <td>Montserrat Medium 118px</td>
+  <td>DotGothic16 / 点阵风 110px</td>
+  <td>思源宋体 22px</td>
+</tr>
+<tr>
+  <td>中文/正文</td>
+  <td>思源黑体 Medium 20px</td>
+  <td>思源黑体 24px + 英文 Mono</td>
+  <td>思源宋体 19px (诗) / 13px (注)</td>
+</tr>
+<tr>
+  <td>切换方式</td>
+  <td>← 左滑</td>
+  <td>← / →</td>
+  <td>→ 右滑 → 回主页</td>
+</tr>
+<tr>
+  <td>自动回主页</td>
+  <td>—</td>
+  <td colspan="2" style="text-align:center">无操作 60s 后自动滑回</td>
+</tr>
+</table>
+</div>
+
+</body>
+</html>

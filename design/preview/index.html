@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ESP32-S3-Touch-AMOLED-1.8 · 1:1 预览器</title>
+<style>
+  :root{
+    /* 板子真实参数 */
+    --sw: 368px;  --sh: 448px;
+    /* C-EDITORIAL 设计令牌（与 mono_watchface.ino 一致） */
+    --bg:#000000; --hi:#F5F5F0; --mm:#C4C4BE; --mid:#9A9A94; --low:#3A3A38;
+    --accent:#E8503A;
+    --dot:#00E5C8; --dotdim:#0D3D38; --dotmid:#2A8F84;
+    --paper:#F6F1E6; --ink:#201D18; --ink2:#6B6560; --red:#B03A2E;
+    /* 外围 UI（浅色主题） */
+    --ui-bg:#F7F7F5; --ui-card:#FFFFFF; --ui-line:#E3E3DF;
+    --ui-text:#1F1F1E; --ui-dim:#6B6B66; --ui-faint:#9A9A94;
+    --ok:#12A150; --warn:#C77700; --err:#C0392B;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:var(--ui-bg); color:var(--ui-text);
+    font:14px/1.6 "Inter","Segoe UI Variable Text","Segoe UI","Microsoft YaHei",sans-serif;
+    padding:28px 24px 48px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{margin-bottom:22px}
+  h1{font-size:20px;font-weight:600;letter-spacing:.01em}
+  h1 span{color:var(--ui-faint);font-weight:400;font-size:14px;margin-left:10px}
+  .sub{margin-top:6px;color:var(--ui-dim);font-size:13px}
+  .sub b{color:var(--ui-text);font-weight:600}
+
+  .main{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap}
+  .stage{flex:0 0 auto}
+  .panel{flex:1 1 380px;min-width:340px;display:flex;flex-direction:column;gap:16px}
+
+  /* ---------- 设备 ---------- */
+  .scalebar{display:flex;gap:6px;align-items:center;margin-bottom:12px}
+  .scalebar span{font-size:12px;color:var(--ui-dim);margin-right:4px}
+  .sbtn{
+    border:1px solid var(--ui-line);background:var(--ui-card);color:var(--ui-dim);
+    padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-variant-numeric:tabular-nums;
+  }
+  .sbtn.on{border-color:var(--ui-text);color:var(--ui-text);font-weight:600}
+
+  .device{
+    width:var(--sw);height:var(--sh);
+    transform-origin:top left;
+    transition:transform .18s ease;
+  }
+  .screen{
+    position:relative;width:var(--sw);height:var(--sh);
+    background:#000;overflow:hidden;
+    border-radius:8px;
+    box-shadow:0 0 0 1px #D8D8D4, 0 0 0 9px #23231F, 0 0 0 10px #C9C9C4,
+               0 12px 40px rgba(0,0,0,.22);
+  }
+  .page{position:absolute;inset:0;display:none}
+  .page.on{display:block}
+
+  /* 叠加层 */
+  .ov{position:absolute;inset:0;pointer-events:none;display:none;z-index:50}
+  .ov.on{display:block}
+  .ov-safe{inset:24px;border:1px dashed rgba(255,90,60,.75);border-radius:2px}
+  .ov-safe::after{
+    content:'SAFE 24px';position:absolute;top:-16px;left:0;
+    font-size:9px;letter-spacing:.12em;color:rgba(255,90,60,.9);
+  }
+  .ov-grid{
+    background-image:
+      linear-gradient(to right, rgba(0,180,255,.30) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0,180,255,.30) 1px, transparent 1px);
+    background-size:8px 8px;
+  }
+  .ov-coord{
+    background-image:
+      linear-gradient(to right, rgba(255,160,0,.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,160,0,.5) 1px, transparent 1px);
+    background-size:46px 46px;
+  }
+
+  /* 元素通用 */
+  .el{position:absolute;white-space:pre;font-variant-numeric:tabular-nums}
+  .el.overflow{outline:1px solid var(--err);outline-offset:1px}
+  .el.overlap{outline:1px dashed var(--warn);outline-offset:1px}
+  .miss{
+    display:inline-block;min-width:1em;
+    border:1px dashed #FF3B30;color:#FF3B30;
+    line-height:1;vertical-align:-.1em;
+  }
+
+  /* 字体族（对应固件字库） */
+  .ui20   {font:500 20px/24px  "Montserrat","Inter","Segoe UI",sans-serif}
+  .cjk20  {font:500 20px/24px  "Noto Sans CJK SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",sans-serif}
+  .serif20{font:500 20px/24px  "Noto Serif CJK SC","Source Han Serif SC","Songti SC","SimSun",serif}
+  .serif28{font:500 28px/46px  "Noto Serif CJK SC","Source Han Serif SC","Songti SC","SimSun",serif}
+  .temp30 {font:500 30px/36px  "Montserrat","Inter","Segoe UI",sans-serif}
+  .temp46 {font:500 46px/48px  "Montserrat","Inter","Segoe UI",sans-serif}
+  .time118{font:500 118px/116px "Montserrat","Inter","Segoe UI",sans-serif;letter-spacing:-.03em}
+
+  .tc-hi{color:var(--hi)} .tc-mm{color:var(--mm)} .tc-mid{color:var(--mid)}
+  .tc-low{color:var(--low)} .tc-dot{color:var(--dot)} .tc-dotmid{color:var(--dotmid)}
+  .tc-ink{color:var(--ink)} .tc-ink2{color:var(--ink2)} .tc-red{color:var(--red)}
+  .tc-paper{color:var(--paper)}
+
+  .bg-paper{background:var(--paper)}
+  .bg-black{background:#000}
+
+  .rect{position:absolute}
+  .dots{position:absolute;width:6px;height:6px;border-radius:3px}
+
+  /* ---------- 控件 ---------- */
+  .card{background:var(--ui-card);border:1px solid var(--ui-line);border-radius:10px;padding:16px 18px}
+  .card h3{font-size:13px;font-weight:600;letter-spacing:.06em;margin-bottom:12px;
+           display:flex;align-items:center;gap:8px}
+  .card h3 .tag{font-size:10px;font-weight:500;color:var(--ui-faint);letter-spacing:.04em}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{
+    flex:1 1 96px;border:1px solid var(--ui-line);background:#FCFCFB;border-radius:8px;
+    padding:10px 12px;cursor:pointer;text-align:left;transition:.15s;
+  }
+  .tab:hover{border-color:#C8C8C2}
+  .tab.on{border-color:var(--ui-text);background:#fff;box-shadow:inset 0 0 0 1px var(--ui-text)}
+  .tab .nm{font-weight:600;font-size:13px;color:var(--ui-text)}
+  .tab .ds{font-size:11px;color:var(--ui-faint);margin-top:2px}
+
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ui-dim);cursor:pointer;
+       padding:5px 9px;border:1px solid var(--ui-line);border-radius:6px;background:#FCFCFB}
+  .chk input{accent-color:#222;cursor:pointer}
+  .chk:hover{border-color:#C8C8C2}
+
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:5px 6px;border-bottom:1px solid #F0F0EC}
+  th{color:var(--ui-faint);font-weight:500;font-size:11px;letter-spacing:.04em}
+  td.n{font-variant-numeric:tabular-nums;color:var(--ui-dim)}
+  td.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:11px}
+
+  .stat{display:flex;gap:10px;flex-wrap:wrap}
+  .stat div{flex:1 1 84px;border:1px solid var(--ui-line);border-radius:8px;padding:9px 11px;background:#FCFCFB}
+  .stat .k{font-size:10.5px;color:var(--ui-faint);letter-spacing:.05em}
+  .stat .v{font-size:17px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+  .v.ok{color:var(--ok)} .v.err{color:var(--err)} .v.warn{color:var(--warn)}
+
+  .log{font-size:12px;line-height:1.75;color:var(--ui-dim)}
+  .log .li{display:flex;gap:7px;padding:2px 0}
+  .log .li b{flex:0 0 44px;font-weight:600}
+  .li.ok b{color:var(--ok)} .li.err b{color:var(--err)} .li.warn b{color:var(--warn)}
+
+  .note{font-size:12px;color:var(--ui-faint);line-height:1.7;margin-top:4px}
+  code{font-family:ui-monospace,"Cascadia Code",Consolas,monospace;font-size:11px;
+       background:#F0F0EC;padding:1px 5px;border-radius:3px}
+  .hint{font-size:12px;color:var(--ui-dim);margin-top:10px;padding-top:10px;border-top:1px solid #F0F0EC}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>ESP32-S3-Touch-AMOLED-1.8 · 1:1 预览器
+    <span id="clockchip">—</span></h1>
+  <p class="sub">
+    真实分辨率 <b>368 × 448</b>（矩形 AMOLED，非圆形）· 驱动 <b>CO5300</b> + 触控 <b>CST816</b> · QSPI + I²C
+    · ESP32-S3R8 <b>8MB PSRAM / 16MB Flash</b> · 布局坐标 <b>1:1 取自 mono_watchface.ino</b>
+  </p>
+</header>
+
+<div class="main">
+  <!-- ================= 左：设备 ================= -->
+  <div class="stage">
+    <div class="scalebar">
+      <span>缩放</span>
+      <button class="sbtn on" data-scale="1">100%</button>
+      <button class="sbtn" data-scale="1.5">150%</button>
+      <button class="sbtn" data-scale="2">200%</button>
+    </div>
+
+    <div class="device" id="device">
+      <div class="screen" id="screen">
+
+        <!-- ============ MONO 主页 ============ -->
+        <div class="page bg-black on" id="p-mono" data-page="MONO">
+          <div class="el ui20 tc-mid"  data-el="kicker" style="left:32px;top:26px" id="m-kicker"></div>
+          <div class="el ui20 tc-mid"  data-el="batt"   style="left:226px;top:26px" id="m-batt">73%</div>
+          <div class="rect" style="left:196px;top:31px;width:20px;height:10px;
+                                   border:1px solid var(--low);border-radius:2px">
+            <div style="margin:1.5px;width:14px;height:6px;background:var(--mid);border-radius:1px"></div>
+          </div>
+          <div class="rect" style="left:217px;top:34px;width:2px;height:4px;background:var(--low)"></div>
+
+          <div class="el time118 tc-hi" data-el="hh" style="left:26px;top:76px"  id="m-hh">20</div>
+          <div class="el time118 tc-mm" data-el="mm" style="left:26px;top:192px" id="m-mm">:44</div>
+
+          <div class="el temp46 tc-hi"  data-el="temp" style="right:88px;top:136px" id="m-temp">24°</div>
+          <div class="el cjk20  tc-mid"  data-el="cond" style="right:88px;top:196px" id="m-cond">多云</div>
+
+          <div class="el ui20  tc-mid" data-el="meta"  style="left:32px;top:344px" id="m-meta"></div>
+          <div class="el cjk20 tc-hi"  data-el="quote" style="left:32px;top:398px;width:272px" id="m-quote"></div>
+
+          <div class="rect" style="left:304px;top:28px;width:1px;height:392px;background:#161618"></div>
+          <div class="el cjk20 tc-mid" data-el="rail-year"
+               style="left:304px;top:64px;width:64px;text-align:center" id="m-ry"></div>
+          <div class="rect" style="left:333px;top:205px;width:7px;height:7px;
+                                   border-radius:50%;background:var(--accent)"></div>
+          <div class="el cjk20 tc-mid" data-el="rail-date"
+               style="left:304px;top:240px;width:64px;text-align:center" id="m-rd"></div>
+
+          <div class="dots" style="left:165px;top:428px;background:var(--hi)" id="d0"></div>
+          <div class="dots" style="left:181px;top:428px;background:var(--low)"></div>
+          <div class="dots" style="left:197px;top:428px;background:var(--low)"></div>
+        </div>
+
+        <!-- ============ DOT 天气页 ============ -->
+        <div class="page bg-black" id="p-dot" data-page="DOT">
+          <div class="el ui20 tc-mid" data-el="hd-l" style="left:28px;top:26px">WX · NINGBO</div>
+          <div class="el ui20 tc-mid" data-el="hd-r" style="right:28px;top:26px" id="d-upd">--:--</div>
+          <div class="rect" data-el="line1" style="left:28px;top:52px;width:312px;height:1px;background:var(--dotdim)"></div>
+
+          <div class="el time118 tc-hi" data-el="temp" style="left:28px;top:70px" id="d-temp">24</div>
+          <div class="rect" data-el="line2" style="left:28px;top:196px;width:312px;height:1px;background:var(--dotdim)"></div>
+
+          <div class="el ui20 tc-dotmid" data-el="lb1" style="left:28px;top:206px">HUMIDITY</div>
+          <div class="el ui20 tc-dotmid" data-el="lb2" style="left:140px;top:206px">WIND</div>
+          <div class="el ui20 tc-dotmid" data-el="lb3" style="left:252px;top:206px">PRESSURE</div>
+          <div class="el temp30 tc-hi" data-el="v1" style="left:28px;top:240px"  id="d-hum">68%</div>
+          <div class="el temp30 tc-hi" data-el="v2" style="left:140px;top:240px" id="d-wind">12</div>
+          <div class="el temp30 tc-hi" data-el="v3" style="left:252px;top:240px" id="d-pres">1013</div>
+          <div class="rect" data-el="line3" style="left:28px;top:286px;width:312px;height:1px;background:var(--dotdim)"></div>
+
+          <div class="el ui20 tc-dotmid" data-el="trend-lb" style="left:28px;top:294px">24H TEMPERATURE</div>
+          <div class="el ui20 tc-dotmid" data-el="tap" style="right:28px;top:294px">TAP</div>
+
+          <div id="d-bars"></div>
+
+          <div class="dots" style="left:165px;top:428px;background:var(--low)"></div>
+          <div class="dots" style="left:181px;top:428px;background:var(--dot)" id="d1"></div>
+          <div class="dots" style="left:197px;top:428px;background:var(--low)"></div>
+        </div>
+
+        <!-- ============ LIT 日历页 ============ -->
+        <div class="page bg-paper" id="p-lit" data-page="LIT">
+          <div class="el cjk20 tc-ink"  data-el="masthead" style="left:32px;top:26px">墨 · 日历</div>
+          <div class="el cjk20 tc-ink2" data-el="solar" style="right:32px;top:26px" id="l-solar"></div>
+          <div class="rect" data-el="rule1" style="left:32px;top:58px;width:304px;height:2px;background:var(--ink)"></div>
+          <div class="rect" data-el="rule2" style="left:32px;top:62px;width:304px;height:1px;background:var(--ink)"></div>
+
+          <div class="el serif28 tc-ink" data-el="title" style="left:0;right:0;top:84px;text-align:center" id="l-title"></div>
+          <div class="el serif28 tc-ink" data-el="l1" style="left:0;right:0;top:130px;text-align:center" id="l-l1"></div>
+          <div class="el serif28 tc-ink" data-el="l2" style="left:0;right:0;top:176px;text-align:center" id="l-l2"></div>
+          <div class="el serif28 tc-ink" data-el="l3" style="left:0;right:0;top:222px;text-align:center" id="l-l3"></div>
+          <div class="el serif28 tc-ink" data-el="l4" style="left:0;right:0;top:268px;text-align:center" id="l-l4"></div>
+
+          <div class="rect" data-el="seal"
+               style="left:166px;top:340px;width:36px;height:36px;background:var(--red);border-radius:4px"></div>
+          <div class="el cjk20 tc-paper" data-el="seal-t"
+               style="left:0;right:0;top:348px;text-align:center">摘</div>
+
+          <div class="el cjk20 tc-ink2" data-el="lunar"
+               style="left:0;right:0;bottom:44px;text-align:center" id="l-lunar"></div>
+          <div class="el cjk20 tc-red"  data-el="yi"
+               style="left:0;right:168px;bottom:14px;text-align:center" id="l-yi"></div>
+          <div class="el cjk20 tc-ink"  data-el="ji"
+               style="left:168px;right:0;bottom:14px;text-align:center" id="l-ji"></div>
+
+          <div class="dots" style="left:165px;top:428px;background:#D8D2C6"></div>
+          <div class="dots" style="left:181px;top:428px;background:#D8D2C6"></div>
+          <div class="dots" style="left:197px;top:428px;background:var(--ink)" id="d2"></div>
+        </div>
+
+        <!-- 叠加层 -->
+        <div class="ov ov-safe"  id="ov-safe"></div>
+        <div class="ov ov-grid"  id="ov-grid"></div>
+        <div class="ov ov-coord" id="ov-coord"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 右：控制面板 ================= -->
+  <div class="panel">
+
+    <div class="card">
+      <h3>页面 <span class="tag">点击切换 / 模拟左右滑动</span></h3>
+      <div class="tabs">
+        <button class="tab on" data-go="mono">
+          <div class="nm">MONO</div><div class="ds">主时钟 · 编辑排版</div></button>
+        <button class="tab" data-go="dot">
+          <div class="nm">DOT</div><div class="ds">天气仪表 · 24h 趋势</div></button>
+        <button class="tab" data-go="lit">
+          <div class="nm">LIT</div><div class="ds">摘抄日历 · 纸面杂志</div></button>
+      </div>
+      <p class="note">固件行为：左右滑动切页，底部三点指示；子页 60 秒无操作自动回 MONO。</p>
+    </div>
+
+    <div class="card">
+      <h3>自动检测 <span class="tag">溢出 / 重叠 / 缺字</span></h3>
+      <div class="stat">
+        <div><div class="k">溢出屏幕</div><div class="v ok" id="s-of">0</div></div>
+        <div><div class="k">元素重叠</div><div class="v ok" id="s-ov">0</div></div>
+        <div><div class="k">缺字方框</div><div class="v ok" id="s-ms">0</div></div>
+        <div><div class="k">字库字形</div><div class="v" id="s-gl">0</div></div>
+      </div>
+      <div class="log" id="report" style="margin-top:12px"></div>
+      <div class="row" style="margin-top:14px;padding-top:12px;border-top:1px solid #F0F0EC">
+        <button class="sbtn" id="btn-scan" style="padding:6px 13px">扫描全年内容</button>
+        <span style="flex:1;font-size:11.5px;color:var(--ui-faint)">
+          遍历 10 条金句 + 12 条摘抄，提前找出会在某天压字/溢出的排版
+        </span>
+      </div>
+      <div class="log" id="scanout" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3>叠加与开关</h3>
+      <div class="row">
+        <label class="chk"><input type="checkbox" id="c-safe"> 安全区 24px</label>
+        <label class="chk"><input type="checkbox" id="c-grid"> 8px 网格</label>
+        <label class="chk"><input type="checkbox" id="c-coord"> 46px 行距</label>
+        <label class="chk"><input type="checkbox" id="c-miss" checked> 缺字高亮</label>
+        <label class="chk"><input type="checkbox" id="c-wx" checked> 天气有数据</label>
+      </div>
+      <div class="hint" id="wxhint">
+        <b>天气开关的作用：</b>关掉后 DOT 页会显示固件在取不到天气时的真实状态
+        （<code>--</code> 占位 + 24 根趋势柱全部隐藏）。这正是排查「很多长方形」的关键对照。
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>当前页元素坐标 <span class="tag">取自 .ino</span></h3>
+      <div style="max-height:210px;overflow:auto">
+        <table>
+          <thead><tr><th>元素</th><th>字体</th><th class="n">X</th><th class="n">Y</th><th class="n">W×H</th></tr></thead>
+          <tbody id="coord"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>硬件规格 <span class="tag">已联网核实</span></h3>
+      <table>
+        <tbody>
+          <tr><td>分辨率</td><td class="mono">368 × 448（矩形，1.8"）</td></tr>
+          <tr><td>显示驱动</td><td class="mono">CO5300 · QSPI</td></tr>
+          <tr><td>触控芯片</td><td class="mono">CST816/CST820 · I²C</td></tr>
+          <tr><td>MCU</td><td class="mono">ESP32-S3R8 · 240MHz · 双核</td></tr>
+          <tr><td>存储</td><td class="mono">8MB PSRAM + 16MB Flash</td></tr>
+          <tr><td>IMU</td><td class="mono">QMI8658 六轴</td></tr>
+          <tr><td>RTC / PMU</td><td class="mono">PCF85063 / AXP2101</td></tr>
+          <tr><td>音频</td><td class="mono">ES8311 + 麦克风 + 扬声器</td></tr>
+          <tr><td>其他</td><td class="mono">TF 卡槽 · PWR/BOOT 键</td></tr>
+        </tbody>
+      </table>
+      <p class="note">这块板子的能力远不止表盘：IMU、RTC、音频、TF 卡都还没被当前固件用到。</p>
+    </div>
+
+  </div>
+</div>
+
+<p class="note" style="max-width:1180px;margin:26px auto 0">
+  说明：屏幕内所有元素坐标、字号、颜色均 <b>1:1 取自 mono_watchface.ino</b>，非另行设计。
+  浏览器字体用于近似 Noto Sans/Serif CJK Medium，实际渲染会有 1–2px 差异。
+</p>
+
+</div>
+
+<script>
+/* ==================================================================
+   字形集：从 font_cjk_20.c 实际解析得出（range_start + 偏移）
+   不在此集合内的字符 = 板子上会显示成空心方框
+   ================================================================== */
+const GLYPHSET = new Set(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~·—…、。〇《》「」一七万三上下不与专世中为举久之乎乐九习乡书争二于云五亦人以伊众会低体作依修健元光入八六兮其兼内农冥冬冰冻几凡分则初利刷前动势十千卅博卷历压厚去又发口可后向君吸吾呆周味呼唐啊啼善喝四在地坐坤墨声处夏外多夜大天头子孟孤学宁安宗宜宠审寒将小少就尽层居屏履山布帆年幽庄床度庭庸延廿开强录往径德心忌思恩息恶惊想意感慎慢成我所拖挂摘故散整断新方旋无日早时明易春是晓晚晴暑暝暴更月有朋望李来松柳根楚楼欢欣欲正此步气水求江沧河泉法注流济浩浪浮海涣深清湿满漫灭焦然照熬物独王理甜生留疑痕登白的皆目直看眠眺睡知石破离秋种积穷空窗立笃笠素索终经绝维美翁而耗腊自至舍舒舟芒花苍苟若茶菜落葭蒹蓑虑蛰行衣裂觉言议记论诗语说读谓谭谷赏走趋跬路踪身载辞辨辱达过运进远速道那里钓长问闲间闻阴阵降随雀雨雪雷雹雾霜露静风飞食饭鸟鹳黄！（），：；？");
+
+/* ================= 固件数据（抄自 mono_watchface.ino） ================= */
+const QUOTES = [
+  "「凡心所向，素履以往。」","「山不过来，我就过去。」","「慢慢走，欣赏啊。」",
+  "「人间有味是清欢。」","「此心安处是吾乡。」","「长风破浪会有时，直挂云帆济沧海。」",
+  "「万物皆有裂痕，那是光照进来的地方。」","「闲看庭前花开花落。」","「静水流深。」",
+  "「不积跬步，无以至千里。」"
+];
+const EXCERPTS = [
+  {src:"《论语》",   l:["学而时习之，不亦说乎？","有朋自远方来，不亦乐乎？","",""]},
+  {src:"《道德经》", l:["上善若水。","水善利万物而不争，","处众人之所恶，故几于道。",""]},
+  {src:"《庄子》",   l:["天地有大美而不言，","四时有明法而不议，","万物有成理而不说。",""]},
+  {src:"《小窗幽记》",l:["宠辱不惊，看庭前花开花落；","去留无意，望天上云卷云舒。","",""]},
+  {src:"《大学》",   l:["苟日新，日日新，又日新。","","",""]},
+  {src:"《中庸》",   l:["博学之，审问之，","慎思之，明辨之，笃行之。","",""]},
+  {src:"《孟子》",   l:["穷则独善其身，","达则兼济天下。","",""]},
+  {src:"《周易》",   l:["天行健，君子以自强不息；","地势坤，君子以厚德载物。","",""]},
+  {src:"《诗经》",   l:["蒹葭苍苍，白露为霜。","所谓伊人，在水一方。","",""]},
+  {src:"《楚辞》",   l:["路漫漫其修远兮，","吾将上下而求索。","",""]},
+  {src:"《世说新语》",l:["我与我周旋久，宁作我。","","",""]},
+  {src:"《浮生六记》",l:["布衣饭菜，可乐终身。","","",""]}
+];
+const YI = ["静坐","读书","散步","运动","冥想","早睡","专注","断舍离","感恩","记录","发呆","整理","喝茶","远眺","深呼吸"];
+const JI = ["熬夜","内耗","甜食","忌口","拖延","焦虑","久坐","刷屏","暴食","熬夜"];
+const TERM_NAMES = ["小寒","大寒","立春","雨水","惊蛰","春分","清明","谷雨","立夏","小满","芒种","夏至",
+                    "小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至"];
+const TERM_MONTH= [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12];
+const TERM_C    = [5.4055,20.12,3.87,18.73,5.63,20.646,4.81,20.1,5.52,21.04,
+                   5.678,21.37,7.108,22.83,7.5,23.13,7.646,23.042,8.318,23.438,7.438,22.36,7.18,21.94];
+const WD = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+const MON= ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+const CN_D = ["〇","一","二","三","四","五","六","七","八","九"];
+
+function termDay(year, idx){
+  const Y = year % 100;
+  return Math.floor(Y * 0.2422 + TERM_C[idx]) - Math.floor(Y / 4);
+}
+function currentTerm(y, m, d){
+  let best = -1;
+  for (let i = 0; i < 24; i++){
+    const tm = TERM_MONTH[i], td = termDay(y, i);
+    if (tm < m || (tm === m && td <= d)) best = i;
+  }
+  return best;
+}
+function cnYear(y){ return String(y).split('').map(c => CN_D[+c]).join(''); }
+function cnMonth(m){
+  if (m === 10) return "十"; if (m === 11) return "十一"; if (m === 12) return "十二";
+  return CN_D[m];
+}
+function cnDay(d){
+  if (d <= 9)  return CN_D[d];
+  if (d === 10) return "十";
+  if (d <= 19) return "十" + CN_D[d - 10];
+  if (d === 20) return "二十";
+  if (d <= 29) return "廿" + CN_D[d - 20];
+  if (d === 30) return "三十";
+  return "卅一";
+}
+function daySuffix(d){
+  if (d % 10 === 1 && d !== 11) return "ST";
+  if (d % 10 === 2 && d !== 12) return "ND";
+  if (d % 10 === 3 && d !== 13) return "RD";
+  return "TH";
+}
+
+/* 农历（Intl 中国历，失败则回退公历标注） */
+function lunarText(y, m, d){
+  try{
+    const f = new Intl.DateTimeFormat('zh-CN-u-ca-chinese',{month:'numeric',day:'numeric'});
+    const parts = f.formatToParts(new Date(y, m-1, d));
+    const get = t => (parts.find(p=>p.type===t)||{}).value;
+    let mo = +get('month'), da = +get('day');
+    const leap = get('relatedYear') ? false : false;
+    let lm = cnMonth(((mo - 1) % 12) + 1), ld = cnDay(da);
+    return "农历" + lm + "月" + ld;
+  }catch(e){
+    return "农历" + cnMonth(m) + "月" + cnDay(d);
+  }
+}
+
+/* ================= 渲染 ================= */
+const W = 368, H = 448;
+let curPage = 'mono';
+
+function render(){
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth()+1, d = now.getDate();
+  const yday = Math.floor((now - new Date(y,0,0)) / 86400000) - 1; // 0-based, 与 C 的 tm_yday 一致
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+
+  document.getElementById('clockchip').textContent =
+    `${hh}:${mm} · ${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+
+  /* --- MONO --- */
+  setTxt('m-kicker', WD[now.getDay()].split('').join(' '));
+  setTxt('m-hh', hh);
+  setTxt('m-mm', ':' + mm);
+  setTxt('m-meta', `${MON[m-1]} · ${d}${daySuffix(d)} · DAY ${yday+1}/365`);
+  setTxt('m-quote', QUOTES[yday % 10]);
+  setHtml('m-ry', cnYear(y).split('').join('<br>'));
+  setHtml('m-rd', (cnMonth(m)+'月'+cnDay(d)+'日').split('').join('<br>'));
+
+  /* --- DOT --- */
+  const wx = document.getElementById('c-wx').checked;
+  if (wx){
+    setTxt('d-upd', hh + ':' + mm);
+    setTxt('d-temp', '24');
+    setTxt('d-hum', '68%'); setTxt('d-wind', '12'); setTxt('d-pres', '1013');
+    drawBars(true);
+  } else {
+    setTxt('d-upd', '--:--'); setTxt('d-temp', '--');
+    setTxt('d-hum', '--'); setTxt('d-wind', '--'); setTxt('d-pres', '--');
+    drawBars(false);
+  }
+
+  /* --- LIT --- */
+  setTxt('l-solar', `${y}年${String(m).padStart(2,'0')}月${String(d).padStart(2,'0')}日`);
+  const ex = EXCERPTS[yday % 12];
+  setTxt('l-title', ex.src);
+  ['l-l1','l-l2','l-l3','l-l4'].forEach((id,i)=> setTxt(id, ex.l[i] || ''));
+  /* 忠实复刻固件行为：固件的写法是 if (term >= 0) 就无条件追加节气名，
+     而 currentTerm 返回的是「最近一个已过去的节气」—— 于是非节气日也会
+     带上上一个节气名（例如 9/1 会显示"· 处暑"，真正的白露在 9/7）。
+     预览必须显示板子上真实会出现的内容，所以这里不修正，只记录状态。 */
+  let lunar = lunarText(y, m, d);
+  const ti = currentTerm(y, m, d);
+  window.__termPhantom = false;
+  if (ti >= 0){
+    lunar += " · " + TERM_NAMES[ti];
+    window.__termPhantom = !isTermDay(y, m, d, ti);
+  }
+  setTxt('l-lunar', lunar);
+  setTxt('l-yi', "宜 " + YI[yday % 15]);
+  setTxt('l-ji', "忌 " + JI[yday % 10]);
+
+  inspect();
+}
+function isTermDay(y,m,d,idx){ return TERM_MONTH[idx]===m && termDay(y,idx)===d; }
+
+/* ==================================================================
+   全年内容扫描
+   固件文案按日期轮换（10 条金句 / 12 条摘抄 / 宜忌组合），
+   今天看着没问题的排版，换个日期可能就压字或溢出。
+   这里用真实字体测量全部文案，提前把会出事的那几天揪出来。
+   ================================================================== */
+function scanContent(){
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:absolute;left:-9999px;top:0;visibility:hidden;';
+  document.body.appendChild(probe);
+  const hits = [];
+
+  const measure = (cls, w, txt) => {
+    probe.className = cls;
+    probe.style.width = w + 'px';
+    probe.style.whiteSpace = 'pre-wrap';
+    probe.innerHTML = wrapMissing(txt, false);
+    return probe.offsetHeight;
+  };
+
+  // MONO 金句：起点 y=398，宽 272；底部指示点 y=428；屏幕底 448
+  QUOTES.forEach((q, i) => {
+    const h = measure('cjk20', 272, q);
+    const bot = 398 + h;
+    if (bot > 448)       hits.push(['err','MONO',`金句#${i}`,`高 ${h}px，底部 ${bot} > 448，溢出屏幕`, q]);
+    else if (bot > 428) hits.push(['warn','MONO',`金句#${i}`,`高 ${h}px，底部 ${bot} 压住指示点(428)`, q]);
+  });
+
+  // LIT 摘抄：四行起点 130/176/222/268，行距 46；印章顶边 340
+  EXCERPTS.forEach(ex => {
+    const tops = [130,176,222,268];
+    ex.l.forEach((line, k) => {
+      if (!line) return;
+      const h = measure('serif28', 304, line);
+      if (h > 46)  hits.push(['warn','LIT',ex.src,`第${k+1}行高 ${h}px > 行距 46，会挤到下一行`, line]);
+      const bot = tops[k] + h;
+      if (bot > 340) hits.push(['warn','LIT',ex.src,`第${k+1}行底部 ${bot} 压住印章(340)`, line]);
+    });
+  });
+
+  probe.remove();
+  return hits;
+}
+
+function showScan(){
+  const box = document.getElementById('scanout');
+  const hits = scanContent();
+  if (!hits.length){
+    box.innerHTML = '<div class="li ok"><b>通过</b><span>全部 10 条金句 + 12 条摘抄在任何日期都不会溢出或压字</span></div>';
+    return;
+  }
+  box.innerHTML = hits.map(h=>
+    `<div class="li ${h[0]}"><b>${h[1]}</b><span><b style="color:inherit">${h[2]}</b> ${h[3]}<br>
+     <span style="color:#9A9A94;font-size:11px">${esc(h[4]||'')}</span></span></div>`).join('');
+}
+
+/* 文本写入时做缺字检测 */
+function setTxt(id, txt){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = wrapMissing(txt);
+}
+function setHtml(id, html){ const el = document.getElementById(id); if (el) el.innerHTML = html; }
+
+let missingCount = 0;
+function wrapMissing(txt, tally){
+  const on = document.getElementById('c-miss').checked;
+  let out = '', miss = 0;
+  for (const ch of txt){
+    if (ch === '\n' || ch.trim() === ''){ out += esc(ch); continue; }
+    if (!on || GLYPHSET.has(ch)) out += esc(ch);
+    else { out += `<span class="miss">${esc(ch)}</span>`; miss++; }
+  }
+  if (tally !== false) missingCount += miss;
+  return out;
+}
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* 24h 趋势柱 */
+function drawBars(visible){
+  const box = document.getElementById('d-bars');
+  box.innerHTML = '';
+  if (!visible) return;
+  const temps=[22,21,20,19,19,18,20,22,24,25,26,27,28,28,27,26,25,24,23,22,21,21,20,20];
+  const mn=Math.min(...temps), mx=Math.max(...temps), span=(mx-mn)||1;
+  const baseY=430, topY=360, x0=28, x1=340;
+  temps.forEach((v,i)=>{
+    const h = 8 + (v-mn)/span*(baseY-topY-8);
+    const x = x0 + i/23*(x1-x0-8);
+    const cur = i === new Date().getHours();
+    const b = document.createElement('div');
+    b.className = 'rect';
+    b.style.cssText = `left:${x}px;top:${baseY-h}px;width:8px;height:${h}px;border-radius:4px;` +
+      `background:linear-gradient(to bottom,${cur?'#00E5C8':'#2A8F84'},${cur?'#2A8F84':'#0D3D38'})`;
+    box.appendChild(b);
+  });
+}
+
+/* ================= 三防检测 ================= */
+function inspect(){
+  missingCount = 0;
+  // 重新跑一遍缺字统计（渲染时已累计，这里仅重置后由页面文本重算）
+  const page = document.querySelector('.page.on');
+  const els = [...page.querySelectorAll('.el')];
+  missingCount = page.querySelectorAll('.miss').length;
+
+  // 溢出
+  const sr = document.getElementById('screen').getBoundingClientRect();
+  const base = parseFloat(getComputedStyle(document.getElementById('device')).transform.split(',')[0].replace('matrix(','')) || 1;
+  let of = 0;
+  els.forEach(el=>{
+    const r = el.getBoundingClientRect();
+    const w = (r.width/base), h = (r.height/base);
+    const left = (r.left - sr.left)/base, top = (r.top - sr.top)/base;
+    const bad = left < -0.5 || top < -0.5 || left + w > W + 0.5 || top + h > H + 0.5;
+    el.classList.toggle('overflow', bad);
+    if (bad) of++;
+  });
+
+  // 重叠（排除空白文本元素与装饰线）
+  let ov = 0;
+  const boxes = els.filter(e=>e.textContent.trim()).map(e=>{
+    const r = e.getBoundingClientRect();
+    return {el:e, l:(r.left-sr.left)/base, t:(r.top-sr.top)/base,
+            w:r.width/base, h:r.height/base};
+  }).filter(b=>b.w>0 && b.h>0);
+  boxes.forEach(b => b.el.classList.remove('overlap'));
+  for (let i=0;i<boxes.length;i++){
+    for (let j=i+1;j<boxes.length;j++){
+      const a=boxes[i], b=boxes[j];
+      const ix = Math.min(a.l+a.w, b.l+b.w) - Math.max(a.l, b.l);
+      const iy = Math.min(a.t+a.h, b.t+b.h) - Math.max(a.t, b.t);
+      if (ix > 1 && iy > 1){ a.el.classList.add('overlap'); b.el.classList.add('overlap'); ov++; }
+    }
+  }
+
+  // 报告
+  document.getElementById('s-of').textContent = of;
+  document.getElementById('s-of').className = 'v ' + (of? 'err':'ok');
+  document.getElementById('s-ov').textContent = ov;
+  document.getElementById('s-ov').className = 'v ' + (ov? 'warn':'ok');
+  document.getElementById('s-ms').textContent = missingCount;
+  document.getElementById('s-ms').className = 'v ' + (missingCount? 'err':'ok');
+  document.getElementById('s-gl').textContent = GLYPHSET.size;
+
+  const R = document.getElementById('report');
+  const lines = [];
+  lines.push(row(of===0?'ok':(of>2?'err':'warn'), of===0?'无溢出':`${of} 处`,
+    of===0 ? '所有元素都在 368×448 内' : '元素超出屏幕边界，板子上会被裁掉'));
+  lines.push(row(ov===0?'ok':'warn', ov===0?'无重叠':`${ov} 对`,
+    ov===0 ? '文本元素互不遮挡' : '存在重叠，需调整坐标或字号'));
+  lines.push(row(missingCount===0?'ok':'err', missingCount===0?'零缺字':`${missingCount} 个`,
+    missingCount===0 ? `字库共 ${GLYPHSET.size} 字形，覆盖全部显示用字`
+                     : '这些字不在字库中，板子上会渲染成空心方框'));
+  if (curPage === 'lit' && window.__termPhantom){
+    lines.push(row('warn','逻辑','今天非节气日，但固件会带上上一个节气名（currentTerm 无条件追加）'));
+  }
+  R.innerHTML = lines.join('');
+  function row(cls, val, desc){
+    return `<div class="li ${cls}"><b>${val}</b><span>${desc}</span></div>`;
+  }
+
+  // 坐标表
+  const tb = document.getElementById('coord');
+  tb.innerHTML = els.map(e=>{
+    const r = e.getBoundingClientRect();
+    const font = (e.className.match(/\b(ui20|cjk20|serif20|serif28|temp30|temp46|time118)\b/)||['','-'])[1];
+    return `<tr><td>${e.dataset.el||''}</td><td class="mono">${font}</td>
+      <td class="n">${Math.round((r.left-sr.left)/base)}</td>
+      <td class="n">${Math.round((r.top-sr.top)/base)}</td>
+      <td class="n">${Math.round(r.width/base)}×${Math.round(r.height/base)}</td></tr>`;
+  }).join('');
+}
+
+/* ================= 交互 ================= */
+function go(p){
+  curPage = p;
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.getElementById('p-'+p).classList.add('on');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.go===p));
+  render();
+}
+document.querySelectorAll('.tab').forEach(t=> t.onclick = ()=> go(t.dataset.go));
+
+document.querySelectorAll('.sbtn').forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll('.sbtn').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    const s = b.dataset.scale;
+    const dev = document.getElementById('device');
+    dev.style.transform = `scale(${s})`;
+    dev.style.width = (W*s)+'px';
+    dev.style.height = (H*s)+'px';
+    setTimeout(inspect, 220);
+  };
+});
+
+['safe','grid','coord'].forEach(k=>{
+  document.getElementById('c-'+k).onchange = e =>
+    document.getElementById('ov-'+k).classList.toggle('on', e.target.checked);
+});
+document.getElementById('c-miss').onchange = render;
+document.getElementById('c-wx').onchange  = render;
+document.getElementById('btn-scan').onclick = showScan;
+
+// 模拟左右滑动
+let tx = null;
+const scr = document.getElementById('screen');
+scr.addEventListener('pointerdown', e=> tx = e.clientX);
+scr.addEventListener('pointerup', e=>{
+  if (tx === null) return;
+  const dx = e.clientX - tx; tx = null;
+  if (Math.abs(dx) < 40) return;
+  const order = ['mono','dot','lit'];
+  let i = order.indexOf(curPage);
+  i = (i + (dx < 0 ? 1 : -1) + 3) % 3;
+  go(order[i]);
+});
+
+render();
+setInterval(render, 1000);
+</script>
+</body>
+</html>

@@ -57,6 +57,20 @@
 2. **分工**：用户负责方向指导与审美决策；所有编码、烧录、调试由助手执行。
 3. **烧录纪律**：统一命令行烧录；Arduino IDE 只看代码不点上传（防止覆盖事故）。
 4. **每阶段有可见产出**，情绪价值即时兑现。
+5. **字库纪律**（2026-09-01 新增，血泪教训）：
+   - 改了任何界面文案必须重跑字库流程，**禁止手工维护 `symbols.txt`**
+     （手工维护已导致两次"空心方框"事故）。
+   - 标准流程：
+     ```
+     python tools/sync-symbols.py     # 从 .ino 自动提取字符集（UTF-8 安全）
+     node   tools/gen-fonts.js        # 重新生成字库
+     python tools/check-font.py       # 校验覆盖，退出码 0 才准烧录
+     ```
+   - `check-font.py` 退出码非 0 = 有字会渲染成空心方框，**禁止烧录**。
+   - 中文文件一律用 Python/UTF-8 工具读写，**禁止 PowerShell 的
+     `Get-Content` / `Out-File` / `Set-Content`**（会毁掉 UTF-8 编码）。
+6. **预览器**：`design/preview/index.html`，坐标 1:1 取自 `mono_watchface.ino`，
+   内置溢出/重叠/缺字三防检测与全年内容扫描。改动界面后用它先自检。
 
 ## 四、设备使用知识库
 
@@ -118,4 +132,35 @@
   `releases\mono_watchface_rev4_20260822\`
 - ⚠️ `mono_watchface\secrets.h` 含真实 WiFi 密码：本地保留供编译，已被 .gitignore 排除；
   改 WiFi 时同步更新该文件
+
+## 七、阶段 2 交付记录（三页卡片 · v1.2 已验收 ✅）
+
+**功能**：三页架构（主页 MONO / 天气 DOT / 日历 LIT）+ 左右滑动导航 + 底部三点指示器。
+主页保留原 MONO 编辑排版；天气页新增湿度/风速/气压 + 24h 温度趋势（圆角柱/平滑曲线双模式）；
+日历页从"每日一诗"改为"每日书籍摘抄"（12 部经典按日轮换）+ 农历节气 + 宜忌。
+
+**发布**：GitHub [v1.2.0](https://github.com/jsensun/amoled-lab/releases/tag/v1.2.0)（bin+zip 双格式固件）。
+**本地存档**：`D:\ESP32 固件\mono_watchface_v1.2\`（含源码/字库/设计稿/工具/完整文档）。
+
+**新增踩坑经验（10-16 号）**
+
+10. **Arduino 构建缓存陷阱**：用固定 `--build-path` 时，改字库后可能复用旧对象文件导致
+    "空心方框"。**改字库必须删 build 目录强制全新编译**。
+11. **汉字编码陷阱**：`唐` 的 Unicode 是 **U+5510**，不是 U+674E（那是 `李`）。曾因混淆导致
+    "唐"一直显示方框。**务必用 `[int][char]'字'` 验证真实码点**。
+12. **28px 宋体每行最多 13 字**：368px 屏宽 ÷ 28px = 13 字/行，超长摘抄需拆行或换版本。
+13. **LIT 页风格统一**：最初 LIT 页用米黄纸张风（仿古书），与黑底编辑风格格不入。
+    用户要求统一后改为黑底 + 宋体 + 暗朱红（#B03A2E），既保留文化韵味又风格统一。
+14. **红字亮度**：LIT 页红字用亮朱红 #E8503A 过亮，改用暗朱红 #B03A2E 更沉稳。
+15. **顶栏对齐**：`lv_obj_align(..., LV_ALIGN_TOP_RIGHT, x, y)` 的 y 是相对屏幕顶的偏移，
+    与左侧 `new_label(x, y)` 的绝对 y 需一致才能水平对齐（曾差 26px）。
+16. **字库范围检查不可靠**：`font_time_118` 用 format0_tiny（unicode_list=NULL），直接查码点
+    会误报 `glyphs=0`。用头文件 `--range` 注释判断覆盖。
+
+**知识库补充**
+
+- 三页视觉稿：`design\stage2-cards-concepts.html`（用户确认稿）
+- 1:1 预览器：`design\preview\index.html`（含溢出/重叠/缺字三防检测）
+- 字库纪律升级：改文案必须 `sync-symbols.py → gen-fonts.js → check-font.py` 三步走，
+  禁止手工维护 symbols.txt（已导致多次空心方框事故）。
 

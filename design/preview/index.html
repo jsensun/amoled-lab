@@ -13,6 +13,7 @@
     --accent:#E8503A;
     --dot:#00E5C8; --dotdim:#0D3D38; --dotmid:#2A8F84;
     --paper:#F6F1E6; --ink:#201D18; --ink2:#6B6560; --red:#B03A2E;
+    --litred:#B03A2E; /* LIT 页暗朱红(与固件 COL_LITRED 一致) */
     /* 外围 UI（浅色主题） */
     --ui-bg:#F7F7F5; --ui-card:#FFFFFF; --ui-line:#E3E3DF;
     --ui-text:#1F1F1E; --ui-dim:#6B6B66; --ui-faint:#9A9A94;
@@ -103,7 +104,7 @@
   .tc-hi{color:var(--hi)} .tc-mm{color:var(--mm)} .tc-mid{color:var(--mid)}
   .tc-low{color:var(--low)} .tc-dot{color:var(--dot)} .tc-dotmid{color:var(--dotmid)}
   .tc-ink{color:var(--ink)} .tc-ink2{color:var(--ink2)} .tc-red{color:var(--red)}
-  .tc-paper{color:var(--paper)}
+  .tc-paper{color:var(--paper)} .tc-litred{color:var(--litred)} .tc-bg{color:var(--bg)}
 
   .bg-paper{background:var(--paper)}
   .bg-black{background:#000}
@@ -241,33 +242,32 @@
         </div>
 
         <!-- ============ LIT 日历页 ============ -->
-        <div class="page bg-paper" id="p-lit" data-page="LIT">
-          <div class="el cjk20 tc-ink"  data-el="masthead" style="left:32px;top:26px">墨 · 日历</div>
-          <div class="el cjk20 tc-ink2" data-el="solar" style="right:32px;top:26px" id="l-solar"></div>
-          <div class="rect" data-el="rule1" style="left:32px;top:58px;width:304px;height:2px;background:var(--ink)"></div>
-          <div class="rect" data-el="rule2" style="left:32px;top:62px;width:304px;height:1px;background:var(--ink)"></div>
+        <div class="page bg-black" id="p-lit" data-page="LIT">
+          <div class="el cjk20 tc-mid"  data-el="masthead" style="left:32px;top:26px">墨 · 日历</div>
+          <div class="el cjk20 tc-mid" data-el="solar" style="right:32px;top:26px" id="l-solar"></div>
+          <div class="rect" data-el="rule1" style="left:32px;top:52px;width:304px;height:1px;background:var(--low)"></div>
 
-          <div class="el serif28 tc-ink" data-el="title" style="left:0;right:0;top:84px;text-align:center" id="l-title"></div>
-          <div class="el serif28 tc-ink" data-el="l1" style="left:0;right:0;top:130px;text-align:center" id="l-l1"></div>
-          <div class="el serif28 tc-ink" data-el="l2" style="left:0;right:0;top:176px;text-align:center" id="l-l2"></div>
-          <div class="el serif28 tc-ink" data-el="l3" style="left:0;right:0;top:222px;text-align:center" id="l-l3"></div>
-          <div class="el serif28 tc-ink" data-el="l4" style="left:0;right:0;top:268px;text-align:center" id="l-l4"></div>
+          <div class="el serif28 tc-litred" data-el="title" style="left:0;right:0;top:84px;text-align:center" id="l-title"></div>
+          <div class="el serif28 tc-hi" data-el="l1" style="left:0;right:0;top:130px;text-align:center" id="l-l1"></div>
+          <div class="el serif28 tc-hi" data-el="l2" style="left:0;right:0;top:176px;text-align:center" id="l-l2"></div>
+          <div class="el serif28 tc-hi" data-el="l3" style="left:0;right:0;top:222px;text-align:center" id="l-l3"></div>
+          <div class="el serif28 tc-hi" data-el="l4" style="left:0;right:0;top:268px;text-align:center" id="l-l4"></div>
 
           <div class="rect" data-el="seal"
-               style="left:166px;top:340px;width:36px;height:36px;background:var(--red);border-radius:4px"></div>
-          <div class="el cjk20 tc-paper" data-el="seal-t"
+               style="left:166px;top:340px;width:36px;height:36px;background:var(--litred);border-radius:4px"></div>
+          <div class="el cjk20 tc-bg" data-el="seal-t"
                style="left:0;right:0;top:348px;text-align:center">摘</div>
 
-          <div class="el cjk20 tc-ink2" data-el="lunar"
+          <div class="el cjk20 tc-mid" data-el="lunar"
                style="left:0;right:0;bottom:44px;text-align:center" id="l-lunar"></div>
-          <div class="el cjk20 tc-red"  data-el="yi"
+          <div class="el cjk20 tc-litred"  data-el="yi"
                style="left:0;right:168px;bottom:14px;text-align:center" id="l-yi"></div>
-          <div class="el cjk20 tc-ink"  data-el="ji"
+          <div class="el cjk20 tc-mid"  data-el="ji"
                style="left:168px;right:0;bottom:14px;text-align:center" id="l-ji"></div>
 
-          <div class="dots" style="left:165px;top:428px;background:#D8D2C6"></div>
-          <div class="dots" style="left:181px;top:428px;background:#D8D2C6"></div>
-          <div class="dots" style="left:197px;top:428px;background:var(--ink)" id="d2"></div>
+          <div class="dots" style="left:165px;top:428px;background:var(--low)"></div>
+          <div class="dots" style="left:181px;top:428px;background:var(--low)"></div>
+          <div class="dots" style="left:197px;top:428px;background:var(--hi)" id="d2"></div>
         </div>
 
         <!-- 叠加层 -->
@@ -289,7 +289,7 @@
         <button class="tab" data-go="dot">
           <div class="nm">DOT</div><div class="ds">天气仪表 · 24h 趋势</div></button>
         <button class="tab" data-go="lit">
-          <div class="nm">LIT</div><div class="ds">摘抄日历 · 纸面杂志</div></button>
+          <div class="nm">LIT</div><div class="ds">摘抄日历 · 黑金编辑风</div></button>
       </div>
       <p class="note">固件行为：左右滑动切页，底部三点指示；子页 60 秒无操作自动回 MONO。</p>
     </div>

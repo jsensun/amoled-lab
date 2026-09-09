@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bloub 机器人动效演示 · MOCHI 桌宠风格参考</title>
+<style>
+:root{
+  --ink:#0a0a0c;      /* 身体黑（bloub 的 encre） */
+  --paper:#f4f2ee;    /* 背景纸色 */
+  --eye:#ffffff;      /* 眼睛白 */
+  --pupil:#0a0a0c;    /* 瞳孔 */
+  --accent:#3b82f6;   /* 通知蓝 */
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#111114;color:#ccc;font-family:"Noto Sans SC","Segoe UI",sans-serif;min-height:100vh;padding:32px 20px 64px}
+h1{text-align:center;font-weight:300;font-size:22px;color:#eee;letter-spacing:.08em;margin-bottom:6px}
+.sub{text-align:center;font-size:12px;color:#666;letter-spacing:.15em;margin-bottom:8px}
+.src{text-align:center;font-size:11px;color:#555;margin-bottom:32px}
+.src a{color:#777;text-decoration:none;border-bottom:1px dotted #555}
+
+/* ===== 舞台 ===== */
+.stage-wrap{display:flex;flex-direction:column;align-items:center;gap:28px}
+.stage{
+  width:368px;height:448px;border-radius:14px;background:var(--paper);
+  box-shadow:0 0 0 1px #2a2a2e,0 16px 48px rgba(0,0,0,.6);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.stage .state-tag{position:absolute;top:18px;left:0;right:0;text-align:center;font-size:12px;color:#999;letter-spacing:.35em}
+.stage .state-cn{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-size:11px;color:#bbb;letter-spacing:.3em}
+
+/* ===== 机器人本体 ===== */
+.bot{position:relative;width:200px;height:200px}
+/* 身体：黑色圆润形状，径向轮廓变形用 border-radius 近似 */
+.body{
+  position:absolute;inset:0;background:var(--ink);border-radius:50%;
+  transition:border-radius .5s cubic-bezier(.22,1,.36,1);
+}
+/* 眼睛容器：跟随身体 */
+.eyes{position:absolute;inset:0;pointer-events:none}
+.eye{
+  position:absolute;top:50%;background:var(--eye);border-radius:50%;
+  transition:all .35s cubic-bezier(.22,1,.36,1);
+}
+.eye.l{left:26%}
+.eye.r{right:26%}
+.eye .pupil{position:absolute;background:var(--pupil);border-radius:50%;transition:all .3s ease}
+
+/* ===== 状态：静止 idle ===== */
+.st-idle .body{border-radius:50%}
+.st-idle .eye{width:26px;height:36px;margin-top:-18px}
+.st-idle .eye .pupil{width:10px;height:10px;left:8px;top:13px}
+/* 眨眼：眼睛高度周期性缩放 */
+.st-idle .eye.l{animation:blinkL 4.2s infinite}
+.st-idle .eye.r{animation:blinkR 4.2s infinite}
+@keyframes blinkL{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}97%{transform:scaleY(1)}}
+@keyframes blinkR{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}97%{transform:scaleY(1)}}
+/* 凝视漂移：眼睛缓慢左右移动 */
+.st-idle .eyes{animation:gaze 7s ease-in-out infinite}
+@keyframes gaze{0%,100%{transform:translateX(0)}30%{transform:translateX(6px)}60%{transform:translateX(-5px)}}
+
+/* ===== 状态：眨眼 wink ===== */
+.st-wink .body{border-radius:50%}
+.st-wink .eye.l{width:26px;height:36px;margin-top:-18px}
+.st-wink .eye.r{width:44px;height:7px;margin-top:-3px;border-radius:4px}
+.st-wink .eye.l .pupil{width:10px;height:10px;left:8px;top:13px}
+.st-wink .eye.r .pupil{display:none}
+
+/* ===== 状态：睁大眼 wide ===== */
+.st-wide .body{border-radius:50%}
+.st-wide .eye{width:34px;height:52px;margin-top:-26px}
+.st-wide .eye .pupil{width:12px;height:12px;left:11px;top:20px}
+
+/* ===== 状态：睡觉 sleep ===== */
+.st-sleep .body{border-radius:50%;animation:sleepFloat 1.2s ease-in-out infinite}
+.st-sleep .eye{width:30px;height:6px;margin-top:-3px;border-radius:4px}
+.st-sleep .eye .pupil{display:none}
+@keyframes sleepFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+/* ===== 状态：思考 thinking ===== */
+.st-think .body{border-radius:50%;animation:thinkPulse 1.5s ease-in-out infinite}
+.st-think .eye{width:22px;height:30px;margin-top:-15px}
+.st-think .eye .pupil{width:9px;height:9px;left:7px;top:11px}
+@keyframes thinkPulse{0%,100%{transform:scale(1)}50%{transform:scale(.92)}}
+
+/* ===== 状态：警报 alert（斜感叹号） ===== */
+.st-alert .body{border-radius:38% 38% 38% 38%/50% 50% 50% 50%;transform:rotate(17.7deg) scale(.55,.9);animation:alertBuzz .4s infinite}
+.st-alert .eye{display:none}
+@keyframes alertBuzz{0%,100%{transform:rotate(17.7deg) scale(.55,.9) translateX(0)}50%{transform:rotate(17.7deg) scale(.55,.9) translateX(1.5px)}}
+
+/* ===== 状态：通知 notify ===== */
+.st-notify .body{border-radius:50%}
+.st-notify .eye{width:30px;height:30px;margin-top:-15px}
+.st-notify .eye .pupil{width:11px;height:11px;left:10px;top:10px}
+.st-notify .notif{position:absolute;width:22px;height:22px;border-radius:50%;background:var(--accent);top:12%;right:14%;animation:notifPop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes notifPop{0%{transform:scale(0)}60%{transform:scale(1.14)}100%{transform:scale(1)}}
+
+/* ===== 状态：轨道 orbit ===== */
+.st-orbit .body{border-radius:50%;animation:orbitSpin 2.4s linear infinite}
+.st-orbit .eye{width:20px;height:30px;margin-top:-15px}
+.st-orbit .eye .pupil{width:8px;height:8px;left:6px;top:11px}
+.st-orbit .ring{position:absolute;border:2px solid rgba(10,10,12,.25);border-radius:50%;top:50%;left:50%}
+.st-orbit .ring.r1{width:120px;height:120px;margin:-60px 0 0 -60px;animation:ringSpin 2.4s linear infinite}
+.st-orbit .ring.r2{width:160px;height:160px;margin:-80px 0 0 -80px;animation:ringSpin 2.4s linear infinite reverse}
+@keyframes orbitSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes ringSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+/* ===== 状态：爆发 burst ===== */
+.st-burst .body{border-radius:50%;animation:burstCollapse 2.6s ease-out infinite}
+.st-burst .eye{width:26px;height:36px;margin-top:-18px;animation:burstEye 2.6s ease-out infinite}
+.st-burst .eye .pupil{width:10px;height:10px;left:8px;top:13px}
+.st-burst .particle{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--ink);top:50%;left:50%;opacity:0}
+.st-burst .p1{animation:burstP 2.6s ease-out infinite}
+.st-burst .p2{animation:burstP 2.6s ease-out .1s infinite}
+.st-burst .p3{animation:burstP 2.6s ease-out .2s infinite}
+.st-burst .p4{animation:burstP 2.6s ease-out .3s infinite}
+.st-burst .p5{animation:burstP 2.6s ease-out .4s infinite}
+.st-burst .p6{animation:burstP 2.6s ease-out .5s infinite}
+@keyframes burstCollapse{0%,100%{transform:scale(1)}30%{transform:scale(.2)}55%{transform:scale(.2)}80%{transform:scale(1)}}
+@keyframes burstEye{0%,100%{opacity:1}30%{opacity:0}55%{opacity:0}80%{opacity:1}}
+@keyframes burstP{0%{transform:translate(0,0) scale(1);opacity:0}25%{opacity:1}55%{opacity:0}100%{transform:translate(var(--dx),var(--dy)) scale(.5);opacity:0}}
+.st-burst .p1{--dx:60px;--dy:-40px}
+.st-burst .p2{--dx:-55px;--dy:-35px}
+.st-burst .p3{--dx:70px;--dy:20px}
+.st-burst .p4{--dx:-65px;--dy:25px}
+.st-burst .p5{--dx:20px;--dy:-65px}
+.st-burst .p6{--dx:-25px;--dy:60px}
+
+/* ===== 状态：惊叹 exclaim（竖感叹号） ===== */
+.st-exclaim .body{border-radius:30% 30% 30% 30%/45% 45% 45% 45%;transform:scale(.4,1.1)}
+.st-exclaim .eye{display:none}
+.st-exclaim .dot{position:absolute;width:26px;height:26px;border-radius:50%;background:var(--ink);bottom:18%;left:50%;margin-left:-13px}
+
+/* ===== 状态：蛋形 egg ===== */
+.st-egg .body{border-radius:50% 50% 50% 50%/62% 62% 38% 38%}
+.st-egg .eye{width:18px;height:30px;margin-top:-15px}
+.st-egg .eye .pupil{width:8px;height:8px;left:5px;top:11px}
+
+/* ===== 状态：六边形 hexagon ===== */
+.st-hex .body{border-radius:12px;transform:rotate(30deg) scale(.9)}
+.st-hex .eye{width:18px;height:30px;margin-top:-15px}
+.st-hex .eye .pupil{width:8px;height:8px;left:5px;top:11px}
+
+/* ===== 控制区 ===== */
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:560px}
+.controls button{
+  padding:10px 16px;border-radius:8px;border:1px solid #333;background:#1c1c1f;color:#ccc;
+  font-size:13px;letter-spacing:.05em;cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.controls button:hover{border-color:#555;color:#fff}
+.controls button.active{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 0 0 1px #fff inset}
+
+.note{max-width:560px;margin:36px auto 0;padding:20px 24px;background:#1c1c1f;border-radius:10px;border:1px solid #2a2a2e}
+.note h3{font-size:14px;color:#eee;font-weight:500;letter-spacing:.06em;margin-bottom:12px}
+.note p{font-size:12px;color:#999;line-height:1.9}
+.note b{color:#ddd;font-weight:500}
+.note .tag{display:inline-block;padding:1px 8px;border-radius:3px;font-size:10px;letter-spacing:.1em;margin-right:6px;background:#2a2a2e;color:#aaa}
+</style>
+</head>
+<body>
+
+<h1>bloub 机器人动效</h1>
+<div class="sub">MOCHI 桌宠风格参考 · 黑色身体 + 白色眼睛 · 状态变形</div>
+<div class="src">参考 <a href="https://github.com/jeremy-prt/bloub" target="_blank">github.com/jeremy-prt/bloub</a>（x.ai Grok 头像复刻）· CSS 复刻演示</div>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <div class="state-tag" id="stateTag">IDLE · 静止</div>
+    <div class="bot" id="bot">
+      <div class="body"></div>
+      <div class="eyes">
+        <div class="eye l"><div class="pupil"></div></div>
+        <div class="eye r"><div class="pupil"></div></div>
+      </div>
+      <div class="notif"></div>
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="particle p1"></div><div class="particle p2"></div><div class="particle p3"></div>
+      <div class="particle p4"></div><div class="particle p5"></div><div class="particle p6"></div>
+      <div class="dot"></div>
+    </div>
+    <div class="state-cn" id="stateCn">静止 · 眨眼 · 凝视漂移</div>
+  </div>
+
+  <div class="controls" id="controls">
+    <button data-state="idle" class="active">静止 idle</button>
+    <button data-state="wink">眨眼 wink</button>
+    <button data-state="wide">惊喜 wide</button>
+    <button data-state="sleep">睡觉 sleep</button>
+    <button data-state="think">思考 thinking</button>
+    <button data-state="alert">警报 alert</button>
+    <button data-state="notify">通知 notify</button>
+    <button data-state="exclaim">惊叹 exclaim</button>
+    <button data-state="egg">蛋形 egg</button>
+    <button data-state="hex">六边形 hexagon</button>
+    <button data-state="orbit">轨道 orbit</button>
+    <button data-state="burst">爆发 burst</button>
+  </div>
+</div>
+
+<div class="note">
+  <h3>设计说明 · 移植到 MOCHI 桌宠</h3>
+  <p>
+    <span class="tag">身体</span>单一黑色圆润形状，靠 <b>border-radius 变形</b>近似 bloub 的径向轮廓变形（真实固件用半径数组插值，更平滑）。<br>
+    <span class="tag">眼睛</span>两只<b>白色</b>椭圆，独立变形、独立倾斜 —— 表情的灵魂。<br>
+    <span class="tag">眨眼</span>眼睛高度周期性缩放（bloub 实测 0.2s 眨眼）。<br>
+    <span class="tag">凝视</span>眼睛跟随触摸/指针缓慢漂移，让角色"活着"。<br>
+    <span class="tag">过渡</span>指数缓出（easeOutQuint），身体不过冲 —— 与 bloub 一致。<br>
+    <span class="tag">固件</span>这套动效在 LVGL 上可实现：身体=填充多边形（半径插值）、眼睛=白色椭圆、眨眼=高度缩放、凝视=坐标跟随。
+  </p>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const bot = document.getElementById('bot');
+const stateTag = document.getElementById('stateTag');
+const stateCn = document.getElementById('stateCn');
+const buttons = document.querySelectorAll('#controls button');
+
+const CN = {
+  idle:['IDLE · 静止','静止 · 眨眼 · 凝视漂移'],
+  wink:['WINK · 眨眼','一只眼闭成横线'],
+  wide:['WIDE · 惊喜','眼睛睁大'],
+  sleep:['SLEEP · 睡觉','小球上下浮动'],
+  think:['THINKING · 思考','身体脉动'],
+  alert:['ALERT · 警报','斜感叹号 · 微振'],
+  notify:['NOTIFY · 通知','蓝色通知点弹出'],
+  exclaim:['EXCLAIM · 惊叹','竖感叹号'],
+  egg:['EGG · 蛋形','身体变蛋形'],
+  hex:['HEXAGON · 六边形','身体变六边形'],
+  orbit:['ORBIT · 轨道','身体旋转 · 环绕圆环'],
+  burst:['BURST · 爆发','身体塌缩 · 粒子四散'],
+};
+
+function setState(s){
+  bot.className = 'bot st-' + s;
+  stateTag.textContent = CN[s][0];
+  stateCn.textContent = CN[s][1];
+  buttons.forEach(b=>b.classList.toggle('active', b.dataset.state===s));
+}
+buttons.forEach(b=>b.addEventListener('click',()=>setState(b.dataset.state)));
+</script>
+</body>
+</html>

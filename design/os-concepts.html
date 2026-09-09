@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>阶段3 · OS 视觉稿 · 主屏 + 应用抽屉</title>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000; --hi:#F5F5F0; --mm:#C4C4BE; --mid:#9A9A94; --low:#3A3A38; --acc:#E8503A;
+  --dot:#00E5C8; --dotdim:#0D3D38; --dotmid:#2A8F84;
+  --litred:#B03A2E;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a1e;color:#ccc;font-family:"Noto Sans SC","Segoe UI",sans-serif;padding:32px 16px 64px}
+h1{text-align:center;font-weight:300;font-size:22px;color:#eee;letter-spacing:.08em;margin-bottom:8px}
+.sub{text-align:center;font-size:12px;color:#666;letter-spacing:.15em;margin-bottom:40px}
+.gallery{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.screen{width:368px;height:448px;border-radius:14px;position:relative;overflow:hidden;
+box-shadow:0 0 0 1px #2a2a2e,0 16px 48px rgba(0,0,0,.6);font-variant-numeric:tabular-nums;background:#000}
+.screen-label{text-align:center;margin-top:16px}
+.screen-label b{font-size:14px;color:#eee;letter-spacing:.06em}
+.screen-label p{font-size:11px;color:#666;margin-top:4px;line-height:1.6}
+
+/* ========= 主屏 MONO（时钟）========= */
+.mono{padding:26px 28px;display:flex;flex-direction:column;height:100%}
+.mono .kicker-row{display:flex;justify-content:space-between;font-size:14px;color:var(--mid);letter-spacing:.25em}
+.mono .kicker-row .batt{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mid)}
+.mono .battery-shell{display:inline-block;width:18px;height:9px;border:1px solid var(--low);border-radius:2px;position:relative}
+.mono .battery-shell::after{content:'';position:absolute;right:-3px;top:2px;width:2px;height:4px;background:var(--low);border-radius:0 1px 1px 0}
+.mono .battery-shell i{display:block;height:100%;width:87%;background:var(--mid);border-radius:1px}
+.mono .time-stack{margin-top:auto;margin-bottom:auto}
+.mono .time-row{display:flex;justify-content:space-between;align-items:flex-end}
+.mono .hh{font-size:100px;font-weight:300;line-height:.88;color:var(--hi);font-family:"Montserrat",sans-serif}
+.mono .mm{font-size:100px;font-weight:300;line-height:.88;color:var(--mm);font-family:"Montserrat",sans-serif}
+.mono .wx{text-align:right;padding-bottom:8px}
+.mono .wx-temp{font-size:38px;font-weight:350;color:var(--hi);line-height:1;font-family:"Montserrat",sans-serif}
+.mono .wx-cond{font-size:14px;color:var(--mid);letter-spacing:.3em;margin-top:4px}
+.mono .quote{font-size:14px;color:var(--hi);font-family:"Noto Serif SC",serif;margin-top:auto}
+.mono .quote span{color:var(--acc)}
+.mono .rail{position:absolute;right:0;top:24px;width:64px;bottom:24px;border-left:1px solid #161618}
+.mono .rail-year,.mono .rail-date{position:absolute;left:0;width:64px;text-align:center;font-size:16px;color:var(--mid);font-family:"Noto Sans SC"}
+.mono .rail-year{top:40px}
+.mono .rail-dot{position:absolute;left:30px;width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.mono .rail-date{top:180px}
+
+/* 主屏底部：上滑提示 + 导航点 */
+.home-footer{position:absolute;left:0;right:0;bottom:14px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:10}
+.nav-dots{display:flex;gap:10px}
+.nav-dots i{width:6px;height:6px;border-radius:50%;background:#333}
+.nav-dots i.active{background:#fff;width:18px;border-radius:3px}
+.swipe-hint{font-size:10px;color:var(--low);letter-spacing:.3em;display:flex;align-items:center;gap:6px}
+.swipe-hint .up-arrow{color:var(--dot);font-size:12px}
+
+/* ========= 主屏 DOT（天气）========= */
+.dot{padding:28px;color:var(--dot);font-family:"DotGothic16","Courier New",monospace;height:100%;display:flex;flex-direction:column}
+.dot .top-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--mid);letter-spacing:.15em}
+.dot .divider{height:1px;background:#1a3a38;margin:14px 0}
+.dot .main{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+.dot .temp-big{font-size:110px;font-weight:400;line-height:.9;color:#fff;letter-spacing:-.02em}
+.dot .temp-big sup{font-size:36px;vertical-align:28px;color:var(--dot)}
+.dot .cond-block{text-align:right;padding-bottom:10px}
+.dot .cond-text{font-family:"Noto Sans SC";font-size:24px;font-weight:700;color:#fff;letter-spacing:.3em}
+.dot .cond-sub{font-size:12px;color:var(--mid);letter-spacing:.2em;margin-top:4px;font-family:"Noto Sans SC"}
+.dot .metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:16px}
+.dot .metric-item{padding:10px 0;border-top:1px solid #12242a}
+.dot .metric-label{font-size:10px;color:var(--low);letter-spacing:.25em}
+.dot .metric-value{font-size:20px;color:#fff;margin-top:4px}
+.dot .metric-value .unit{font-size:11px;color:var(--dotmid)}
+.dot .trend-section{margin-top:auto}
+.dot .trend-label{font-size:10px;color:var(--low);letter-spacing:.3em;margin-bottom:8px}
+.dot .trend-bars{display:flex;align-items:flex-end;gap:4px;height:64px}
+.dot .trend-bar{flex:1;border-radius:2px 2px 0 0;position:relative}
+.dot .trend-bar.now{background:var(--dot);box-shadow:0 0 8px rgba(0,229,200,.3)}
+.dot .trend-bar:not(.now){background:var(--dotdim)}
+.dot .trend-times{display:flex;justify-content:space-between;font-size:9px;color:var(--low);margin-top:6px;letter-spacing:.1em}
+
+/* ========= 主屏 LIT（摘抄）========= */
+.lit{padding:26px 32px;display:flex;flex-direction:column;height:100%}
+.lit .header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--low);padding-bottom:10px}
+.lit .header .title{font-size:12px;color:var(--mid);letter-spacing:.35em;font-weight:500}
+.lit .header .solar{font-size:11px;color:var(--mid);letter-spacing:.15em}
+.lit .poem-area{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:0 8px}
+.lit .poem-title{font-size:22px;font-weight:700;font-family:"Noto Serif SC",serif;color:var(--litred);margin-bottom:8px;letter-spacing:.2em}
+.lit .poem-lines{text-align:center;line-height:2.4;font-size:19px;font-family:"Noto Serif SC",serif;font-weight:400;color:var(--hi)}
+.lit .poem-lines p{margin:0}
+.lit .seal{display:inline-block;width:36px;height:36px;border-radius:4px;background:var(--litred);color:#000;font-size:16px;font-family:"Noto Serif SC",serif;
+display:flex;align-items:center;justify-content:center;margin:20px auto 0;opacity:.85}
+.lit .lunar-row{text-align:center;font-size:12px;color:var(--mid);letter-spacing:.2em;margin-top:20px;padding-top:12px;border-top:1px solid var(--low)}
+.lit .yi-ji{display:flex;justify-content:center;gap:48px;margin-top:16px}
+.lit .yi-ji-col{text-align:center}
+.lit .yi-ji-label{font-size:11px;letter-spacing:.2em;margin-bottom:6px}
+.lit .yi-ji-label.red{color:var(--litred)}
+.lit .yi-ji-items{font-size:13px;letter-spacing:.15em;color:var(--mid);font-family:"Noto Serif SC"}
+
+/* ========= 应用抽屉 APP DRAWER ========= */
+.drawer{padding:30px 28px;height:100%;display:flex;flex-direction:column}
+.drawer .d-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:28px}
+.drawer .d-title{font-size:13px;color:var(--mid);letter-spacing:.4em;font-weight:500}
+.drawer .d-close{font-size:11px;color:var(--low);letter-spacing:.2em}
+.drawer .d-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px 18px}
+.drawer .app{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 8px;border-radius:12px;border:1px solid #1c1c1e;background:#0a0a0a}
+.drawer .app:active,.drawer .app.sel{background:#141416;border-color:#2a2a2e}
+.drawer .app-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.drawer .app-name{font-size:12px;color:var(--hi);letter-spacing:.15em}
+.drawer .app-sub{font-size:9px;color:var(--low);letter-spacing:.2em}
+/* 图标风格 */
+.ic-mono{background:#1a1a1e;color:var(--hi);font-family:"Montserrat",sans-serif;font-weight:300}
+.ic-dot{background:var(--dotdim);color:var(--dot);font-family:"DotGothic16",monospace}
+.ic-mochi{background:#2a1a2e;color:#FF9ECB}
+.ic-lit{background:#2a1a16;color:var(--litred);font-family:"Noto Serif SC",serif}
+.ic-game{background:#1a2a1e;color:#7CFF6B;font-family:"DotGothic16",monospace}
+.ic-set{background:#1a1a2e;color:#8FB8FF;font-family:"Montserrat",sans-serif}
+
+/* ========= 应用示例：MOCHI 桌宠（bloub 风格）=========
+   参考 https://github.com/jeremy-prt/bloub —— 一个圆润形状 + 两只白色眼睛，
+   通过径向轮廓变形在多种状态间平滑过渡。这里用 CSS 复刻其视觉语言。 */
+.mochi{padding:24px 28px;height:100%;display:flex;flex-direction:column;align-items:center}
+.mochi .m-head{width:100%;display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.mochi .m-title{font-size:12px;color:var(--mid);letter-spacing:.35em}
+.mochi .m-back{font-size:11px;color:var(--low);letter-spacing:.2em}
+.mochi .m-stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+/* 身体：单一填充圆润形状（bloub 的"一个形状"） */
+.mochi .m-char{width:150px;height:150px;border-radius:50%;background:#FF9ECB;position:relative;
+box-shadow:0 0 44px rgba(255,158,203,.28)}
+/* 眼睛：白色椭圆（bloub 的"两个白色形状"），独立变形 */
+.mochi .m-char .eye{position:absolute;width:22px;height:30px;background:#fff;border-radius:50%;top:56px;
+transition:all .3s ease}
+.mochi .m-char .eye.l{left:40px}.mochi .m-char .eye.r{right:40px}
+/* 瞳孔：深色小点，跟随凝视 */
+.mochi .m-char .pupil{position:absolute;width:9px;height:9px;background:#3a1a2e;border-radius:50%;left:6px;top:10px}
+/* 状态条：展示 bloub 的几种表情状态 */
+.mochi .m-states{display:flex;gap:14px;margin-top:6px}
+.mochi .m-state{display:flex;flex-direction:column;align-items:center;gap:6px}
+.mochi .m-state .mini{width:44px;height:44px;border-radius:50%;background:#FF9ECB;position:relative;opacity:.9}
+.mochi .m-state .mini .e{position:absolute;background:#fff;border-radius:50%}
+.mochi .m-state .mini .e.l{left:10px}.mochi .m-state .mini .e.r{right:10px}
+.mochi .m-state .lbl{font-size:9px;color:var(--low);letter-spacing:.2em}
+/* 各状态的眼睛形态 */
+.mst-idle .e{width:7px;height:10px;top:17px}
+.mst-wink .e.l{width:7px;height:10px;top:17px}
+.mst-wink .e.r{width:13px;height:3px;top:20px;border-radius:2px}
+.mst-wide .e{width:9px;height:14px;top:15px}
+.mst-sleep .e{width:9px;height:3px;top:20px;border-radius:2px}
+.mst-sleep .mini{animation:mfloat 1.2s ease-in-out infinite}
+.mst-think .e{width:7px;height:10px;top:17px}
+.mst-think .mini{background:transparent;box-shadow:none}
+.mst-think .mini::before{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:#FF9ECB;left:18px;top:18px}
+@keyframes mfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.mochi .m-speech{font-size:16px;color:var(--hi);font-family:"Noto Serif SC",serif;letter-spacing:.1em;text-align:center;line-height:1.8}
+.mochi .m-speech span{color:#FF9ECB}
+.mochi .m-status{font-size:10px;color:var(--low);letter-spacing:.3em;margin-top:4px}
+
+/* ========= 应用示例：DOT 游戏 ========= */
+.game{padding:26px 28px;height:100%;display:flex;flex-direction:column;font-family:"DotGothic16",monospace}
+.game .g-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+.game .g-title{font-size:12px;color:var(--dot);letter-spacing:.3em}
+.game .g-back{font-size:11px;color:var(--low);letter-spacing:.2em}
+.game .g-score{font-size:11px;color:var(--mid);letter-spacing:.2em}
+.game .g-board{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-content:center}
+.game .g-cell{aspect-ratio:1;border-radius:6px;background:#0d0d0f;border:1px solid #1c1c1e;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--dot)}
+.game .g-cell.on{background:var(--dotdim);border-color:var(--dotmid);color:var(--dot);box-shadow:0 0 10px rgba(0,229,200,.2)}
+.game .g-foot{display:flex;justify-content:space-between;margin-top:16px;font-size:10px;color:var(--low);letter-spacing:.2em}
+
+/* 说明区 */
+.annots{max-width:960px;margin:44px auto 0;padding:0 16px}
+.annots h2{font-size:16px;color:#eee;font-weight:400;margin-bottom:16px;letter-spacing:.08em}
+.annots table{width:100%;border-collapse:collapse;font-size:12px;color:#aaa}
+.annots th{text-align:left;padding:8px 12px;border-bottom:1px solid #333;color:#ccc;font-weight:500;letter-spacing:.06em}
+.annots td{padding:8px 12px;border-bottom:1px solid #222;line-height:1.6}
+.annots td b{color:#eee;font-weight:500}
+.annots .tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:.1em;margin-right:4px}
+.annots .tag-home{background:#2a2a2e;color:#999}
+.annots .tag-drawer{background:#0D3D38;color:var(--dot)}
+.annots .tag-app{background:#2a1a2e;color:#FF9ECB}
+</style>
+</head>
+<body>
+
+<h1>阶段 3 · OS 视觉稿</h1>
+<div class="sub">主屏滑动切页 + 应用抽屉 · 手表式交互 · 368×448 真实比例</div>
+
+<div class="gallery">
+
+  <!-- ===== 主屏 MONO ===== -->
+  <div>
+    <div class="screen">
+      <div class="mono">
+        <div class="kicker-row"><span>FRIDAY</span><span class="batt"><span class="battery-shell"><i></i></span>87%</span></div>
+        <div class="time-stack">
+          <div class="time-row"><span class="hh">21</span><span class="mm">47</span></div>
+        </div>
+        <div class="wx"><div class="wx-temp">26°</div><div class="wx-cond">晴 · 多云</div></div>
+        <div class="quote">凡心所向，素履以往<span>。</span></div>
+      </div>
+      <div class="rail"><div class="rail-year">二〇二六</div><div class="rail-dot"></div><div class="rail-date">八月廿一</div></div>
+      <div class="home-footer">
+        <div class="nav-dots"><i class="active"></i><i></i><i></i></div>
+        <div class="swipe-hint"><span class="up-arrow">▲</span> 上滑 · 应用</div>
+      </div>
+    </div>
+    <div class="screen-label"><b>主屏 · MONO 时钟</b><p>左右滑切页 · 上滑呼出应用抽屉</p></div>
+  </div>
+
+  <!-- ===== 主屏 DOT ===== -->
+  <div>
+    <div class="screen">
+      <div class="dot">
+        <div class="top-row"><span>WX · NINGBO</span><span>24H</span></div>
+        <div class="divider"></div>
+        <div class="main">
+          <div class="temp-big">26<sup>°</sup></div>
+          <div class="cond-block"><div class="cond-text">多云</div><div class="cond-sub">体感 27°</div></div>
+        </div>
+        <div class="metrics">
+          <div class="metric-item"><div class="metric-label">HUMIDITY</div><div class="metric-value">68<span class="unit">%</span></div></div>
+          <div class="metric-item"><div class="metric-label">WIND</div><div class="metric-value">3.2<span class="unit">m/s</span></div></div>
+          <div class="metric-item"><div class="metric-label">PRESSURE</div><div class="metric-value">1012<span class="unit">hPa</span></div></div>
+          <div class="metric-item"><div class="metric-label">AQI</div><div class="metric-value">42<span class="unit">优</span></div></div>
+        </div>
+        <div class="trend-section">
+          <div class="trend-label">24H TEMPERATURE</div>
+          <div class="trend-bars">
+            <div class="trend-bar" style="height:30%"></div><div class="trend-bar" style="height:42%"></div>
+            <div class="trend-bar" style="height:38%"></div><div class="trend-bar" style="height:55%"></div>
+            <div class="trend-bar" style="height:70%"></div><div class="trend-bar" style="height:64%"></div>
+            <div class="trend-bar now" style="height:82%"></div>
+          </div>
+          <div class="trend-times"><span>18</span><span>00</span><span>06</span><span>12</span><span>18</span></div>
+        </div>
+      </div>
+      <div class="home-footer">
+        <div class="nav-dots"><i></i><i class="active"></i><i></i></div>
+        <div class="swipe-hint"><span class="up-arrow">▲</span> 上滑 · 应用</div>
+      </div>
+    </div>
+    <div class="screen-label"><b>主屏 · DOT 天气</b><p>左右滑切页 · 上滑呼出应用抽屉</p></div>
+  </div>
+
+  <!-- ===== 主屏 LIT ===== -->
+  <div>
+    <div class="screen">
+      <div class="lit">
+        <div class="header"><span class="title">墨 · 日历</span><span class="solar">2026.08.21</span></div>
+        <div class="poem-area">
+          <div class="poem-title">《小窗幽记》</div>
+          <div class="poem-lines">
+            <p>宠辱不惊，看庭前花开花落</p>
+            <p>去留无意，望天上云卷云舒</p>
+          </div>
+          <div class="seal">摘</div>
+        </div>
+        <div class="lunar-row">七月廿九 · 处暑</div>
+        <div class="yi-ji">
+          <div class="yi-ji-col"><div class="yi-ji-label red">宜</div><div class="yi-ji-items">静坐</div></div>
+          <div class="yi-ji-col"><div class="yi-ji-label">忌</div><div class="yi-ji-items">熬夜</div></div>
+        </div>
+      </div>
+      <div class="home-footer">
+        <div class="nav-dots"><i></i><i></i><i class="active"></i></div>
+        <div class="swipe-hint"><span class="up-arrow">▲</span> 上滑 · 应用</div>
+      </div>
+    </div>
+    <div class="screen-label"><b>主屏 · LIT 摘抄</b><p>左右滑切页 · 上滑呼出应用抽屉</p></div>
+  </div>
+
+  <!-- ===== 应用抽屉 ===== -->
+  <div>
+    <div class="screen">
+      <div class="drawer">
+        <div class="d-head"><span class="d-title">应用</span><span class="d-close">下滑返回</span></div>
+        <div class="d-grid">
+          <div class="app sel"><div class="app-icon ic-mono">21</div><div class="app-name">时钟</div><div class="app-sub">MONO</div></div>
+          <div class="app"><div class="app-icon ic-dot">☀</div><div class="app-name">天气</div><div class="app-sub">DOT</div></div>
+          <div class="app"><div class="app-icon ic-mochi">●</div><div class="app-name">桌宠</div><div class="app-sub">MOCHI</div></div>
+          <div class="app"><div class="app-icon ic-lit">墨</div><div class="app-name">摘抄</div><div class="app-sub">LIT</div></div>
+          <div class="app"><div class="app-icon ic-game">▣</div><div class="app-name">游戏</div><div class="app-sub">DOT</div></div>
+          <div class="app"><div class="app-icon ic-set">⚙</div><div class="app-name">设置</div><div class="app-sub">SYS</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label"><b>应用抽屉</b><p>上滑呼出 · 点图标进入 · 下滑返回主屏</p></div>
+  </div>
+
+  <!-- ===== 应用示例：MOCHI 桌宠 ===== -->
+  <div>
+    <div class="screen">
+      <div class="mochi">
+        <div class="m-head"><span class="m-title">MOCHI · 桌宠</span><span class="m-back">▼ 返回</span></div>
+        <div class="m-stage">
+          <div class="m-char">
+            <div class="eye l"><div class="pupil"></div></div>
+            <div class="eye r"><div class="pupil"></div></div>
+          </div>
+          <div class="m-speech">今天也要<span>元气满满</span>呀</div>
+          <div class="m-states">
+            <div class="m-state mst-idle"><div class="mini"><span class="e l"></span><span class="e r"></span></div><span class="lbl">静止</span></div>
+            <div class="m-state mst-wink"><div class="mini"><span class="e l"></span><span class="e r"></span></div><span class="lbl">眨眼</span></div>
+            <div class="m-state mst-wide"><div class="mini"><span class="e l"></span><span class="e r"></span></div><span class="lbl">惊喜</span></div>
+            <div class="m-state mst-sleep"><div class="mini"><span class="e l"></span><span class="e r"></span></div><span class="lbl">睡觉</span></div>
+            <div class="m-state mst-think"><div class="mini"><span class="e l"></span><span class="e r"></span></div><span class="lbl">思考</span></div>
+          </div>
+          <div class="m-status">● 在线 · 陪你聊天</div>
+        </div>
+      </div>
+    </div>
+    <div class="screen-label"><b>应用 · MOCHI 桌宠</b><p>点图标进入 · 下滑返回主屏</p></div>
+  </div>
+
+  <!-- ===== 应用示例：DOT 游戏 ===== -->
+  <div>
+    <div class="screen">
+      <div class="game">
+        <div class="g-head"><span class="g-title">DOT · 2048</span><span class="g-back">▼ 返回</span></div>
+        <div class="g-score">SCORE 2048</div>
+        <div class="g-board">
+          <div class="g-cell on">2</div><div class="g-cell on">4</div><div class="g-cell"></div><div class="g-cell on">2</div>
+          <div class="g-cell"></div><div class="g-cell on">8</div><div class="g-cell on">2</div><div class="g-cell"></div>
+          <div class="g-cell on">4</div><div class="g-cell"></div><div class="g-cell on">16</div><div class="g-cell on">2</div>
+          <div class="g-cell"></div><div class="g-cell on">2</div><div class="g-cell"></div><div class="g-cell on">4</div>
+        </div>
+        <div class="g-foot"><span>← ↑ ↓ → 滑动</span><span>轻点返回</span></div>
+      </div>
+    </div>
+    <div class="screen-label"><b>应用 · DOT 游戏</b><p>点图标进入 · 下滑返回主屏</p></div>
+  </div>
+
+</div>
+
+<div class="annots">
+  <h2>交互逻辑说明</h2>
+  <table>
+    <tr><th>场景</th><th>操作</th><th>说明</th></tr>
+    <tr><td><span class="tag tag-home">主屏</span></td><td><b>左右滑动</b></td><td>在 MONO 时钟 / DOT 天气 / LIT 摘抄 三页间循环切换（常驻信息）</td></tr>
+    <tr><td><span class="tag tag-home">主屏</span></td><td><b>上滑</b></td><td>呼出应用抽屉（应用列表）</td></tr>
+    <tr><td><span class="tag tag-drawer">抽屉</span></td><td><b>点图标</b></td><td>进入对应应用（桌宠 / 游戏 / 设置…）</td></tr>
+    <tr><td><span class="tag tag-drawer">抽屉</span></td><td><b>下滑</b></td><td>返回主屏</td></tr>
+    <tr><td><span class="tag tag-app">应用内</span></td><td><b>下滑</b></td><td>返回主屏（回到之前所在的主屏页）</td></tr>
+    <tr><td><span class="tag tag-app">应用内</span></td><td><b>60s 无操作</b></td><td>自动回主屏 + 熄屏（沿用现有电源管理）</td></tr>
+  </table>
+
+  <h2 style="margin-top:28px">应用清单（当前规划）</h2>
+  <table>
+    <tr><th>应用</th><th>人格</th><th>图标</th><th>说明</th></tr>
+    <tr><td><b>时钟</b></td><td>MONO</td><td class="ic-mono">21</td><td>主屏常驻，也可从抽屉进入</td></tr>
+    <tr><td><b>天气</b></td><td>DOT</td><td class="ic-dot">☀</td><td>主屏常驻，也可从抽屉进入</td></tr>
+    <tr><td><b>摘抄</b></td><td>LIT</td><td class="ic-lit">墨</td><td>主屏常驻，也可从抽屉进入</td></tr>
+    <tr><td><b>桌宠</b></td><td>MOCHI</td><td class="ic-mochi">●</td><td>AI 桌宠，语音/触摸互动（第三项目）</td></tr>
+    <tr><td><b>游戏</b></td><td>DOT</td><td class="ic-game">▣</td><td>点阵小游戏（第二项目）</td></tr>
+    <tr><td><b>设置</b></td><td>SYS</td><td class="ic-set">⚙</td><td>亮度 / WiFi / 时区 / 关于</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

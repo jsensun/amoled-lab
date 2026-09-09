@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOT 游戏 · 视觉稿 · 游戏菜单 + 2048</title>
+<style>
+:root{
+  --bg:#000;
+  --bg-grad:radial-gradient(120% 90% at 50% 0%, #0a0e1a 0%, #000 60%);
+  --glass:rgba(255,255,255,.06);
+  --glass-border:rgba(255,255,255,.12);
+  --glass-hi:rgba(255,255,255,.14);
+  --text:#F5F5F0;
+  --text-dim:#8a8a92;
+  --text-low:#4a4a52;
+  --cyan:#00E5C8;
+  --blue:#3B82F6;
+  --purple:#8B5CF6;
+  --gold:#FFD700;
+  --orange:#FF6B4A;
+  --red:#FF3B30;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#14141a;color:#ccc;font-family:"Noto Sans SC","Segoe UI",sans-serif;padding:32px 16px 64px}
+h1{text-align:center;font-weight:300;font-size:22px;color:#eee;letter-spacing:.08em;margin-bottom:6px}
+.sub{text-align:center;font-size:12px;color:#666;letter-spacing:.15em;margin-bottom:40px}
+.gallery{display:flex;gap:40px;justify-content:center;flex-wrap:wrap}
+.screen{width:368px;height:448px;border-radius:14px;position:relative;overflow:hidden;
+box-shadow:0 0 0 1px #2a2a2e,0 16px 48px rgba(0,0,0,.6);background:var(--bg)}
+.screen-label{text-align:center;margin-top:16px}
+.screen-label b{font-size:14px;color:#eee;letter-spacing:.06em}
+.screen-label p{font-size:11px;color:#666;margin-top:4px;line-height:1.6}
+
+/* ============ 通用：液态玻璃卡片 ============ */
+.glass{
+  background:var(--glass);
+  border:1px solid var(--glass-border);
+  border-radius:18px;
+  position:relative;
+  backdrop-filter:blur(8px);
+  box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 var(--glass-hi);
+}
+.glass::before{ /* 顶部高光 */
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);
+}
+
+/* ============ 游戏菜单 ============ */
+.menu{padding:24px 22px;height:100%;display:flex;flex-direction:column;background:var(--bg-grad)}
+.menu .m-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px}
+.menu .m-title{font-size:15px;color:var(--text);letter-spacing:.3em;font-weight:500}
+.menu .m-title span{color:var(--cyan)}
+.menu .m-sub{font-size:10px;color:var(--text-low);letter-spacing:.2em}
+.menu .m-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;align-content:start}
+.menu .m-card{aspect-ratio:1.05;padding:16px 14px;display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;transition:transform .15s}
+.menu .m-card:active{transform:scale(.96)}
+.menu .m-card .m-ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;position:relative}
+.menu .m-card .m-ico::after{content:'';position:absolute;inset:0;border-radius:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.menu .m-card .m-name{font-size:15px;color:var(--text);font-weight:500;letter-spacing:.06em}
+.menu .m-card .m-desc{font-size:10px;color:var(--text-dim);letter-spacing:.08em;line-height:1.5}
+/* 各游戏图标配色 */
+.m-ico.g2048{background:linear-gradient(135deg,#0a2a2a,#0d3d38);color:var(--cyan);box-shadow:0 0 20px rgba(0,229,200,.25)}
+.m-ico.gsnake{background:linear-gradient(135deg,#0a1a3a,#0d2a4a);color:var(--blue);box-shadow:0 0 20px rgba(59,130,246,.25)}
+.m-ico.gbrick{background:linear-gradient(135deg,#1a0a3a,#2a0d4a);color:var(--purple);box-shadow:0 0 20px rgba(139,92,246,.25)}
+.m-ico.gtetris{background:linear-gradient(135deg,#3a2a0a,#4a3a0d);color:var(--gold);box-shadow:0 0 20px rgba(255,215,0,.25)}
+.m-ico.gflappy{background:linear-gradient(135deg,#3a0a0a,#4a0d0d);color:var(--orange);box-shadow:0 0 20px rgba(255,107,74,.25)}
+.menu .m-foot{text-align:center;font-size:10px;color:var(--text-low);letter-spacing:.25em;margin-top:16px}
+
+/* ============ 2048 游戏 ============ */
+.game{padding:20px 20px;height:100%;display:flex;flex-direction:column;background:var(--bg-grad)}
+.game .g-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.game .g-back{width:40px;height:40px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:16px;cursor:pointer}
+.game .g-back:active{transform:scale(.92)}
+.game .g-scores{display:flex;gap:10px}
+.game .g-score{min-width:64px;padding:8px 12px;border-radius:12px;text-align:center}
+.game .g-score .lbl{font-size:9px;color:var(--text-dim);letter-spacing:.2em}
+.game .g-score .val{font-size:20px;color:var(--text);font-weight:500;font-variant-numeric:tabular-nums}
+.game .g-score.cur .val{color:var(--cyan)}
+.game .g-score.best .val{color:var(--gold)}
+.game .g-board{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:12px;border-radius:18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.game .g-cell{border-radius:12px;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;position:relative;aspect-ratio:1}
+/* 方块数值配色（霓虹光谱） */
+.game .g-cell.v2{background:linear-gradient(135deg,rgba(0,229,200,.16),rgba(0,229,200,.06));border:1px solid rgba(0,229,200,.4);box-shadow:0 0 14px rgba(0,229,200,.15), inset 0 1px 0 rgba(255,255,255,.2)}
+.game .g-cell.v2 .n{color:var(--cyan);font-size:30px}
+.game .g-cell.v4{background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(59,130,246,.07));border:1px solid rgba(59,130,246,.45);box-shadow:0 0 14px rgba(59,130,246,.18), inset 0 1px 0 rgba(255,255,255,.2)}
+.game .g-cell.v4 .n{color:var(--blue);font-size:30px}
+.game .g-cell.v8{background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(139,92,246,.08));border:1px solid rgba(139,92,246,.5);box-shadow:0 0 16px rgba(139,92,246,.22), inset 0 1px 0 rgba(255,255,255,.2)}
+.game .g-cell.v8 .n{color:var(--purple);font-size:30px}
+.game .g-cell.v16{background:linear-gradient(135deg,rgba(255,215,0,.22),rgba(255,215,0,.09));border:1px solid rgba(255,215,0,.5);box-shadow:0 0 18px rgba(255,215,0,.25), inset 0 1px 0 rgba(255,255,255,.25)}
+.game .g-cell.v16 .n{color:var(--gold);font-size:28px}
+.game .g-cell.v32{background:linear-gradient(135deg,rgba(255,107,74,.24),rgba(255,107,74,.1));border:1px solid rgba(255,107,74,.55);box-shadow:0 0 20px rgba(255,107,74,.3), inset 0 1px 0 rgba(255,255,255,.25)}
+.game .g-cell.v32 .n{color:var(--orange);font-size:28px}
+.game .g-cell.v64{background:linear-gradient(135deg,rgba(255,59,48,.28),rgba(255,59,48,.12));border:1px solid rgba(255,59,48,.6);box-shadow:0 0 22px rgba(255,59,48,.35), inset 0 1px 0 rgba(255,255,255,.25)}
+.game .g-cell.v64 .n{color:var(--red);font-size:28px}
+.game .g-cell.v128,.game .g-cell.v256,.game .g-cell.v512,.game .g-cell.v1024,.game .g-cell.v2048{
+  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.05));
+  border:1px solid rgba(255,255,255,.5);box-shadow:0 0 26px rgba(255,255,255,.3), inset 0 1px 0 rgba(255,255,255,.35)}
+.game .g-cell.v128 .n,.game .g-cell.v256 .n,.game .g-cell.v512 .n,.game .g-cell.v1024 .n,.game .g-cell.v2048 .n{color:#fff;font-size:24px;text-shadow:0 0 12px rgba(255,255,255,.6)}
+.game .g-cell .n{font-weight:600;font-family:"Montserrat","Noto Sans SC",sans-serif;font-variant-numeric:tabular-nums}
+.game .g-hint{text-align:center;font-size:10px;color:var(--text-low);letter-spacing:.2em;margin-top:12px}
+.game .g-hint b{color:var(--text-dim)}
+</style>
+</head>
+<body>
+
+<h1>DOT 游戏 · 视觉稿</h1>
+<div class="sub">苹果手表风格 · 高端科技感 · 液态玻璃 · 368×448 真实比例</div>
+
+<div class="gallery">
+
+  <!-- ===== 游戏菜单 ===== -->
+  <div>
+    <div class="screen">
+      <div class="menu">
+        <div class="m-head">
+          <div class="m-title">DOT<span>·</span>游戏</div>
+          <div class="m-sub">GAME CENTER</div>
+        </div>
+        <div class="m-grid">
+          <div class="m-card glass">
+            <div class="m-ico g2048">2</div>
+            <div>
+              <div class="m-name">2048</div>
+              <div class="m-desc">滑动合并数字</div>
+            </div>
+          </div>
+          <div class="m-card glass">
+            <div class="m-ico gsnake">◉</div>
+            <div>
+              <div class="m-name">贪吃蛇</div>
+              <div class="m-desc">触摸方向控制</div>
+            </div>
+          </div>
+          <div class="m-card glass">
+            <div class="m-ico gbrick">▣</div>
+            <div>
+              <div class="m-name">打砖块</div>
+              <div class="m-desc">挡板接球</div>
+            </div>
+          </div>
+          <div class="m-card glass">
+            <div class="m-ico gtetris">▤</div>
+            <div>
+              <div class="m-name">俄罗斯方块</div>
+              <div class="m-desc">经典下落</div>
+            </div>
+          </div>
+          <div class="m-card glass">
+            <div class="m-ico gflappy">◈</div>
+            <div>
+              <div class="m-name">点阵鸟</div>
+              <div class="m-desc">点击穿越</div>
+            </div>
+          </div>
+        </div>
+        <div class="m-foot">▲ 上滑 · 返回主屏</div>
+      </div>
+    </div>
+    <div class="screen-label"><b>游戏菜单</b><p>网格卡片式 · 液态玻璃 · 点选进入</p></div>
+  </div>
+
+  <!-- ===== 2048 游戏 ===== -->
+  <div>
+    <div class="screen">
+      <div class="game">
+        <div class="g-head">
+          <div class="g-back">‹</div>
+          <div class="g-scores">
+            <div class="g-score glass cur"><div class="lbl">SCORE</div><div class="val">2048</div></div>
+            <div class="g-score glass best"><div class="lbl">BEST</div><div class="val">4096</div></div>
+          </div>
+        </div>
+        <div class="g-board">
+          <div class="g-cell v2"><span class="n">2</span></div>
+          <div class="g-cell"></div>
+          <div class="g-cell v4"><span class="n">4</span></div>
+          <div class="g-cell v2"><span class="n">2</span></div>
+          <div class="g-cell v8"><span class="n">8</span></div>
+          <div class="g-cell v2"><span class="n">2</span></div>
+          <div class="g-cell"></div>
+          <div class="g-cell v16"><span class="n">16</span></div>
+          <div class="g-cell v4"><span class="n">4</span></div>
+          <div class="g-cell v32"><span class="n">32</span></div>
+          <div class="g-cell v2"><span class="n">2</span></div>
+          <div class="g-cell v8"><span class="n">8</span></div>
+          <div class="g-cell v64"><span class="n">64</span></div>
+          <div class="g-cell v2"><span class="n">2</span></div>
+          <div class="g-cell v4"><span class="n">4</span></div>
+          <div class="g-cell v128"><span class="n">128</span></div>
+        </div>
+        <div class="g-hint">滑动屏幕 · 合并相同数字 · 目标 <b>2048</b></div>
+      </div>
+    </div>
+    <div class="screen-label"><b>2048 游戏</b><p>液态玻璃方块 · 霓虹光谱配色 · 滑动操作</p></div>
+  </div>
+
+</div>
+
+</body>
+</html>

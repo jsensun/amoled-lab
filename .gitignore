@@ -3,3 +3,10 @@ mono_watchface/fonts/src/
 mono_watchface/secrets.h
 releases/
 *.log
+
+# dot_games
+dot_games/build/
+dot_games/fonts/src/
+dot_games/fonts/generated.bak/
+mono_watchface/fonts/generated.bak/
+*.bak-*

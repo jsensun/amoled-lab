@@ -50,8 +50,12 @@ arduino-cli upload -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,C
 ## 转写说明
 - `transcribe.py` 使用 faster-whisper **small** 模型（中文识别效果好）
 - 首次运行自动下载模型（约 460MB，需联网）
-- 录音已做 **8x 软件增益** + **noisereduce 降噪**（用前 0.5s 作噪声样本）+ **vad 过滤静音段**
-- 依赖：`pip install faster-whisper noisereduce`
+- 录音已做 **8x 软件增益** + **最强去噪管线**：
+  1. 带通滤波 80Hz-7kHz（去低频隆隆 + 高频摩擦刺耳声）
+  2. noisereduce 强降噪 `prop_decrease=0.95`（用前 0.5s 作噪声样本）
+  3. 峰值归一化（滤波衰减后拉回满幅）
+  4. vad 过滤静音段
+- 依赖：`pip install faster-whisper noisereduce scipy`
 - 实测效果：播放"你好，这是录音测试，一二三四五，今天天气不错，我们出去走一走"
   识别为"今天天气不错我们出去走一走你好"
 

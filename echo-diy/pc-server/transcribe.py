@@ -12,6 +12,7 @@ import os, sys, time, glob
 import wave
 import numpy as np
 import noisereduce as nr
+from scipy.signal import butter, sosfilt
 from faster_whisper import WhisperModel
 
 # Windows 控制台可能是 GBK, 强制 UTF-8 输出避免 print 崩溃
@@ -26,14 +27,29 @@ print(f"模型就绪, 监听 {DIR} (Ctrl+C 退出)", flush=True)
 
 
 def load_and_denoise(path):
-    """读 WAV → float32 [-1,1], 用前 0.5s 作噪声样本降噪 (noisereduce)"""
+    """读 WAV → float32 [-1,1], 最强去噪:
+    1) 带通滤波 80Hz-7kHz (去低频隆隆 + 高频摩擦刺耳)
+    2) noisereduce 强降噪 prop_decrease=0.95 (前 0.5s 作噪声样本)
+    """
     with wave.open(path, "rb") as wf:
         rate = wf.getframerate()
         n = wf.getnframes()
         data = np.frombuffer(wf.readframes(n), dtype=np.int16).astype(np.float32) / 32768.0
+
+    # 1. 带通滤波 (语音主要能量 300Hz-3.4kHz, 留余量)
+    sos = butter(4, [80, 7000], btype="bandpass", fs=rate, output="sos")
+    data = sosfilt(sos, data).astype(np.float32)
+
+    # 2. 最强降噪
     noise_len = min(int(rate * 0.5), len(data))
     if noise_len > 0 and len(data) > noise_len:
-        data = nr.reduce_noise(y=data, sr=rate, y_noise=data[:noise_len], prop_decrease=0.8)
+        data = nr.reduce_noise(y=data, sr=rate, y_noise=data[:noise_len],
+                               prop_decrease=0.95, n_fft=2048)
+
+    # 3. 峰值归一化 (滤波会衰减, 拉回满幅避免 whisper 误判音量)
+    peak = np.max(np.abs(data))
+    if peak > 1e-6:
+        data = data / peak * 0.9
     return data, rate
 
 

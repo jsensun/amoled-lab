@@ -1,4 +1,4 @@
-# Echo DIY — 随身录音便签 v1.3
+# Echo DIY — 随身录音便签 v1.4
 
 基于微雪 ESP32-S3-Touch-AMOLED-1.8 V2 的录音设备：
 **按 BOOT 按钮 → 录音 → WiFi 上传电脑 → Whisper 自动转写为文字**
@@ -10,10 +10,10 @@
 ## 固件烧录
 
 ### 方式一：直刷镜像（推荐，最简单）
-用 ESP32 Flash Download Tool 或 esptool 烧录 `firmware/echo_diy_v1.3_merged.bin`，地址 `0x0`：
+用 ESP32 Flash Download Tool 或 esptool 烧录 `firmware/echo_diy_v1.4_merged.bin`，地址 `0x0`：
 
 ```
-esptool.py --port COM3 write_flash 0x0 echo_diy_v1.3_merged.bin
+esptool.py --port COM3 write_flash 0x0 echo_diy_v1.4_merged.bin
 ```
 
 ### 方式二：arduino-cli（需改配置时）
@@ -52,7 +52,7 @@ arduino-cli upload -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,C
 ## 转写说明
 - `transcribe.py` 使用 faster-whisper **small** 模型（中文识别效果好）
 - 首次运行自动下载模型（约 460MB，需联网）
-- 录音已做 **8x 软件增益** + **最强去噪管线**：
+- 录音已做 **4x 软件增益** + **最强去噪管线**：
   1. 带通滤波 80Hz-7kHz（去低频隆隆 + 高频摩擦刺耳声）
   2. noisereduce 强降噪 `prop_decrease=0.95`（用前 0.5s 作噪声样本）
   3. 峰值归一化（滤波衰减后拉回满幅）
@@ -81,8 +81,10 @@ arduino-cli upload -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,C
 ## 文件清单
 ```
 firmware/
-  echo_diy_v1.3_merged.bin   16MB 直刷镜像（推荐，按钮释放修复 + 倒数显示）
-  echo_diy_v1.3_app.bin      app 分区固件（OTA/分区烧录用）
+  echo_diy_v1.4_merged.bin   16MB 直刷镜像（推荐，增益4x 防削波）
+  echo_diy_v1.4_app.bin      app 分区固件（OTA/分区烧录用）
+  echo_diy_v1.3_merged.bin   v1.3 直刷镜像（按钮释放修复 + 倒数显示）
+  echo_diy_v1.3_app.bin      v1.3 app 分区固件
   echo_diy_v1.2_merged.bin   v1.2 直刷镜像（增益8x + 结果回显3s）
   echo_diy_v1.2_app.bin      v1.2 app 分区固件
   echo_diy_v1.1_merged.bin   v1.1 直刷镜像（增益16x，无时长回显）

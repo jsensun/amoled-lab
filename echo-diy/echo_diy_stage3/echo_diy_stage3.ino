@@ -35,7 +35,7 @@
 #define REC_SECONDS 10    /* 最长录音秒数 (再按一次可提前停止) */
 #define PCM_BYTES   (AUDIO_SAMPLE_RATE * 2 * REC_SECONDS)  /* 16bit mono */
 
-#define MIC_GAIN_SOFT 8   /* 软件增益: ES8311 PGA 增益寄存器实测无效, 录音后放大 8x (16x 环境噪声放大明显) */
+#define MIC_GAIN_SOFT 4   /* 软件增益: ES8311 PGA 增益寄存器实测无效, 录音后放大 4x (8x 大声说话削波 Peak=32767) */
 
 #define BTN_IO 0          /* BOOT 按钮, 按下为 LOW */
 

@@ -35,7 +35,7 @@
 #define REC_SECONDS 10    /* 最长录音秒数 (再按一次可提前停止) */
 #define PCM_BYTES   (AUDIO_SAMPLE_RATE * 2 * REC_SECONDS)  /* 16bit mono */
 
-#define MIC_GAIN_SOFT 16  /* 软件增益: ES8311 PGA 增益寄存器实测无效, 录音后放大 16x (原始 Peak~70→1120 安全) */
+#define MIC_GAIN_SOFT 8   /* 软件增益: ES8311 PGA 增益寄存器实测无效, 录音后放大 8x (16x 环境噪声放大明显) */
 
 #define BTN_IO 0          /* BOOT 按钮, 按下为 LOW */
 
@@ -79,7 +79,8 @@ static uint8_t* wav_buf = NULL;
 
 enum State { ST_IDLE, ST_RECORDING, ST_UPLOADING };
 static State state = ST_IDLE;
-static uint32_t wav_len = 0;   /* 录音完成后组装的总长度, 供上传使用 */
+static uint32_t wav_len = 0;      /* 录音完成后组装的总长度, 供上传使用 */
+static uint32_t last_rec_ms = 0;  /* 最近一次录音时长 (毫秒), 供结果回显 */
 
 /* ---------- WAV 头 ---------- */
 static void build_wav_header(uint8_t* hdr, uint32_t data_len) {
@@ -273,7 +274,8 @@ void loop() {
     }
     case ST_RECORDING: {
       uint32_t got = record_to_ram();
-      Serial.printf("recorded %u bytes (%u ms)\n", got, got/32);
+      last_rec_ms = got / 32;   /* 字节 → 毫秒 (16kHz 16bit mono) */
+      Serial.printf("recorded %u bytes (%u ms)\n", got, last_rec_ms);
       wav_len = build_wav(got);
       Serial.printf("WAV total %u bytes\n", wav_len);
       show_status("UPLOADING...", NULL, RGB565_YELLOW);
@@ -286,10 +288,12 @@ void loop() {
         show_status("UPLOAD FAIL", "serial fallback", RGB565_RED);
         send_wav_over_serial(wav_len);
       } else {
-        show_status("UPLOAD OK", NULL, RGB565_GREEN);
+        char buf[24];
+        snprintf(buf, sizeof(buf), "OK %lu s", last_rec_ms / 1000);
+        show_status("UPLOAD OK", buf, RGB565_GREEN);
       }
       Serial.println("UPLOAD_DONE");
-      delay(1500);
+      delay(3000);   /* 结果回显 3 秒, 让用户看清 */
       Serial.println("IDLE: press BOOT to record again");
       show_status("Press BOOT", "to record", RGB565_WHITE);
       state = ST_IDLE;

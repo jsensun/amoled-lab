@@ -9,6 +9,9 @@ Echo DIY — 自动转写服务
   例: python transcribe.py recordings
 """
 import os, sys, time, glob
+import wave
+import numpy as np
+import noisereduce as nr
 from faster_whisper import WhisperModel
 
 # Windows 控制台可能是 GBK, 强制 UTF-8 输出避免 print 崩溃
@@ -21,6 +24,19 @@ print("加载 faster-whisper small 模型 ...", flush=True)
 model = WhisperModel("small", device="cpu", compute_type="int8")
 print(f"模型就绪, 监听 {DIR} (Ctrl+C 退出)", flush=True)
 
+
+def load_and_denoise(path):
+    """读 WAV → float32 [-1,1], 用前 0.5s 作噪声样本降噪 (noisereduce)"""
+    with wave.open(path, "rb") as wf:
+        rate = wf.getframerate()
+        n = wf.getnframes()
+        data = np.frombuffer(wf.readframes(n), dtype=np.int16).astype(np.float32) / 32768.0
+    noise_len = min(int(rate * 0.5), len(data))
+    if noise_len > 0 and len(data) > noise_len:
+        data = nr.reduce_noise(y=data, sr=rate, y_noise=data[:noise_len], prop_decrease=0.8)
+    return data, rate
+
+
 seen = set()
 while True:
     for wav in sorted(glob.glob(os.path.join(DIR, "*.wav"))):
@@ -32,7 +48,8 @@ while True:
             continue
         print(f"[转写] {os.path.basename(wav)} ...", flush=True)
         try:
-            segments, info = model.transcribe(wav, language="zh", beam_size=5, vad_filter=False)
+            audio, rate = load_and_denoise(wav)
+            segments, info = model.transcribe(audio, language="zh", beam_size=5, vad_filter=True)
             text = "".join(s.text for s in segments).strip()
             with open(txt_path, "w", encoding="utf-8") as f:
                 f.write(text)

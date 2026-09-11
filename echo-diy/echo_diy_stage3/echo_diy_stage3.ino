@@ -69,7 +69,8 @@ static void show_status(const char* title, const char* sub, uint16_t color) {
 }
 static void show_recording(uint32_t sec) {
   char buf[24];
-  snprintf(buf, sizeof(buf), "%lu s / %d s", sec, REC_SECONDS);
+  uint32_t remain = (sec < REC_SECONDS) ? (REC_SECONDS - sec) : 0;  /* 倒数 */
+  snprintf(buf, sizeof(buf), "%lu s", remain);
   show_status("RECORDING...", buf, RGB565_RED);
 }
 
@@ -268,6 +269,8 @@ void loop() {
       if (btn_pressed() || Serial.read() == 'r') {
         Serial.println("RECORDING...");
         show_recording(0);
+        /* 关键: 等按钮释放再开始录音, 否则触发后未松手会被误判为"提前停止" → 空文件 */
+        while (digitalRead(BTN_IO) == LOW) delay(10);
         state = ST_RECORDING;
       }
       break;

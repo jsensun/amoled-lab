@@ -1,4 +1,4 @@
-# Echo DIY — 随身录音便签 v1.2
+# Echo DIY — 随身录音便签 v1.3
 
 基于微雪 ESP32-S3-Touch-AMOLED-1.8 V2 的录音设备：
 **按 BOOT 按钮 → 录音 → WiFi 上传电脑 → Whisper 自动转写为文字**
@@ -10,10 +10,10 @@
 ## 固件烧录
 
 ### 方式一：直刷镜像（推荐，最简单）
-用 ESP32 Flash Download Tool 或 esptool 烧录 `firmware/echo_diy_v1.2_merged.bin`，地址 `0x0`：
+用 ESP32 Flash Download Tool 或 esptool 烧录 `firmware/echo_diy_v1.3_merged.bin`，地址 `0x0`：
 
 ```
-esptool.py --port COM3 write_flash 0x0 echo_diy_v1.2_merged.bin
+esptool.py --port COM3 write_flash 0x0 echo_diy_v1.3_merged.bin
 ```
 
 ### 方式二：arduino-cli（需改配置时）
@@ -42,10 +42,12 @@ arduino-cli upload -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,C
 ## 屏幕显示反馈
 板载 1.8" AMOLED 实时显示状态（英文，颜色区分）：
 - 待机：`Press BOOT / to record`（白）
-- 录音中：`RECORDING... / X s / 10 s`（红，每秒刷新计时）
+- 录音中：`RECORDING... / X s`（红，**剩余秒数倒数**，每秒刷新）
 - 上传中：`UPLOADING...`（黄）
 - 成功：`UPLOAD OK / OK X s`（绿，显示 3 秒 + 录音时长回显）
 - 失败：`UPLOAD FAIL / serial fallback`（红，自动回退串口）
+
+> v1.3 修复：按 BOOT 触发后**等待按钮释放**再开始录音，避免"按下未松手被误判为提前停止"导致空文件。
 
 ## 转写说明
 - `transcribe.py` 使用 faster-whisper **small** 模型（中文识别效果好）
@@ -79,14 +81,16 @@ arduino-cli upload -p COM3 --fqbn "esp32:esp32:esp32s3:PSRAM=opi,USBMode=hwcdc,C
 ## 文件清单
 ```
 firmware/
-  echo_diy_v1.2_merged.bin   16MB 直刷镜像（推荐，增益8x + 结果回显3s）
-  echo_diy_v1.2_app.bin      app 分区固件（OTA/分区烧录用）
+  echo_diy_v1.3_merged.bin   16MB 直刷镜像（推荐，按钮释放修复 + 倒数显示）
+  echo_diy_v1.3_app.bin      app 分区固件（OTA/分区烧录用）
+  echo_diy_v1.2_merged.bin   v1.2 直刷镜像（增益8x + 结果回显3s）
+  echo_diy_v1.2_app.bin      v1.2 app 分区固件
   echo_diy_v1.1_merged.bin   v1.1 直刷镜像（增益16x，无时长回显）
   echo_diy_v1.1_app.bin      v1.1 app 分区固件
   echo_diy_v1.0_merged.bin   v1.0 直刷镜像（无屏幕显示）
   echo_diy_v1.0_app.bin      v1.0 app 分区固件
 pc-server/
   recv_http.py               接收服务器（零依赖，仅标准库）
-  transcribe.py              自动转写（faster-whisper + noisereduce 降噪）
+  transcribe.py              自动转写（faster-whisper + 最强去噪）
   recv_serial.py             串口接收备用（WiFi 失败回退时用）
 ```

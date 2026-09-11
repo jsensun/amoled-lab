@@ -10,3 +10,9 @@ dot_games/fonts/src/
 dot_games/fonts/generated.bak/
 mono_watchface/fonts/generated.bak/
 *.bak-*
+
+# echo-diy
+echo-diy/echo_diy_stage3/build/
+echo-diy/recordings/
+echo-diy/**/secrets.h
+*.log.err

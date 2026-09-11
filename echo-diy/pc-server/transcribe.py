@@ -65,7 +65,7 @@ while True:
         print(f"[转写] {os.path.basename(wav)} ...", flush=True)
         try:
             audio, rate = load_and_denoise(wav)
-            segments, info = model.transcribe(audio, language="zh", beam_size=5, vad_filter=True)
+            segments, info = model.transcribe(audio, language="zh", beam_size=5, vad_filter=False)
             text = "".join(s.text for s in segments).strip()
             with open(txt_path, "w", encoding="utf-8") as f:
                 f.write(text)
